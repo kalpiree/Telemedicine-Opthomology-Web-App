@@ -97,7 +97,7 @@ export default function Home(){
                     variant="h6"
                     underline="none"
                     color="inherit"
-                    href="/premium-themes/onepirate/"
+                    href="/"
                     sx={{ fontSize: 24 }}
                 >
                     {'Tele-Medicine'}
@@ -350,7 +350,7 @@ export default function Home(){
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                CC 3.0 BY
+                CC 3.0
               </Link>
             </Typography>
           </Grid>

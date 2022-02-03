@@ -2,10 +2,14 @@ import { useState,useEffect   } from 'react';
 import './App.css';
 import LoginForm from './Components/Common/LoginForm';
 import RegisterForm from './Components/Common/RegisterForm';
+import ResetForm from './Components/ResetForm';
 import HomeDoctor from './Components/HomeDoctor';
 import HomePatient from './Components/HomePatient';
 import HomeAdmin from './Components/HomeAdmin';
 import Home from './Components/Home';
+import PatientAppointments from './Components/PatientAppointments'
+import Doctors from './Components/Doctors';
+import EditPatientProfile from './Components/EditPatientProfile';
 import {
   Routes,
   Route,
@@ -32,12 +36,15 @@ function App() {
           get(child(dbRef, `users`)).then((snapshot) => {
             let snapshot_val = snapshot.val();
             let uid_val = response.user.uid;
-            let role_val = snapshot_val[uid_val]['role']['role'];
+            let role_val = snapshot_val[uid_val]['role'];
+            sessionStorage.setItem('Auth Token', response._tokenResponse.refreshToken)
+            sessionStorage.setItem('UID', response.user.uid)
             console.log(role_val)
             if(role_val=='Doctor'){
               navigate('/homedoctor')
             }
             else if(role_val=='Patient'){
+              console.log("Entered here")
               navigate('/homepatient')
             }
             else if(role_val=='Admin'){
@@ -49,15 +56,15 @@ function App() {
           // console.log(response)
           // sessionStorage.setItem('UID', response.user.uid)
           
-          sessionStorage.setItem('Auth Token', response._tokenResponse.refreshToken)
+          
         })
         .catch((error) => {
           console.log(error.code)
           if (error.code === 'auth/wrong-password') {
-            toast.error('Please check the Password');
+            toast.error('Please check the Password',{autoClose: 2000});
           }
           if (error.code === 'auth/user-not-found') {
-            toast.error('Please check the Email');
+            toast.error('Please check the Email',{autoClose: 2000});
           }
         })
         
@@ -66,9 +73,9 @@ function App() {
       createUserWithEmailAndPassword(authentication, email, password)
         .then((response) => {
           const postData = {
-            name: {name},
-            role: {role},
-            email: {email}
+            name: name,
+            role: role,
+            email: email
           };
           const dbRef = ref(database);
           const updates = {};
@@ -85,6 +92,7 @@ function App() {
             navigate('/homeadmin')
           }
           sessionStorage.setItem('Auth Token', response._tokenResponse.refreshToken)
+          sessionStorage.setItem('UID', response.user.uid)
         })
         .catch((error) => {
           if (error.code === 'auth/email-already-in-use') {
@@ -168,6 +176,29 @@ function App() {
             element={
               <Home />}
           />
+
+          <Route
+            path='/doctors'
+            element={
+              <Doctors />}
+          />
+          <Route
+            path='/appointments-patient'
+            element={
+              <PatientAppointments />}
+          />
+          <Route
+            path='/edit-patient-profile'
+            element={
+              <EditPatientProfile />}
+          />
+
+          <Route
+            path='/reset-password'
+            element={
+              <ResetForm />}
+          />
+
         </Routes>
       </>
       <ToastContainer />

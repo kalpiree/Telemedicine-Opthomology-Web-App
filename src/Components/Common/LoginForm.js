@@ -103,6 +103,11 @@ export default function LoginForm({ title, setPassword, setEmail, handleAction }
                   control={<Checkbox value="remember" color="primary" />}
                   label="Remember me"
                 />
+                <Grid item>
+                    <Link href="/reset-password" variant="body2">
+                      {"Forgot Password?"}
+                    </Link>
+                  </Grid>
                 <Button
                   type="submit"
                   fullWidth

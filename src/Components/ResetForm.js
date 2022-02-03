@@ -1,22 +1,23 @@
 import * as React from 'react';
+import { useState,useEffect   } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
 import CssBaseline from '@mui/material/CssBaseline';
 import TextField from '@mui/material/TextField';
-import InputLabel from '@mui/material/InputLabel';
-import FormControl from '@mui/material/FormControl';
-import Select from '@mui/material/Select';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
-import Paper from '@mui/material/Paper';
 import Link from '@mui/material/Link';
-import Grid from '@mui/material/Grid';
+import Paper from '@mui/material/Paper';
 import Box from '@mui/material/Box';
+import Grid from '@mui/material/Grid';
 import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
 import Typography from '@mui/material/Typography';
-import Container from '@mui/material/Container';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import { MenuItem } from '@mui/material';
+import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 
 function Copyright(props) {
     return (
@@ -31,20 +32,36 @@ function Copyright(props) {
     );
   }
   
-const theme = createTheme();
+  const theme = createTheme();
 
-export default function BasicTextFields({ title, setPassword, setEmail, setRole, setName, handleAction }) {
-    const handleSubmit = (event) => {
+  
+export default function ResetForm() {
+    const [email, setEmail] = useState('');
+    const navigate = useNavigate();
+    async function handleReset(event){
         event.preventDefault();
         const data = new FormData(event.currentTarget);
         // eslint-disable-next-line no-console
         console.log({
           email: data.get('email'),
-          password: data.get('password'),
         });
-        handleAction();
+        const authentication = getAuth();
+        await sendPasswordResetEmail(authentication,data.get('email'))
+        .then(() => {
+            console.log('Password reset mail sent.');
+            toast.success('Password Reset Email Sent. Please check your mail.',{autoClose: 2000});
+            
+            }).catch((error) => {
+            console.error(error);
+            if (error.code === 'auth/user-not-found') {
+                toast.error('Unregistered User. Please check the Email',{autoClose: 2000});
+              }
+            });
+        
+        navigate('/login')
       };
-    return (
+    
+      return (
         <ThemeProvider theme={theme}>
         <Grid container component="main" sx={{ height: '100vh' }}>
           <CssBaseline />
@@ -54,7 +71,7 @@ export default function BasicTextFields({ title, setPassword, setEmail, setRole,
             sm={4}
             md={7}
             sx={{
-              backgroundImage: 'url(https://images.pexels.com/photos/8376198/pexels-photo-8376198.jpeg)',
+              backgroundImage: 'url(https://images.pexels.com/photos/8376152/pexels-photo-8376152.jpeg)',
               backgroundRepeat: 'no-repeat',
               backgroundColor: (t) =>
                 t.palette.mode === 'light' ? t.palette.grey[50] : t.palette.grey[900],
@@ -76,32 +93,9 @@ export default function BasicTextFields({ title, setPassword, setEmail, setRole,
                 <LockOutlinedIcon />
               </Avatar>
               <Typography component="h1" variant="h5">
-                Register
+                Reset Password
               </Typography>
-              <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 1 }}>
-                <InputLabel id="demo-simple-select-label">Role</InputLabel>
-                <Select
-                    labelId="demo-simple-select-label"
-                    id="demo-simple-select"
-                    label="Role"
-                    name="role"
-                    onChange={(e) => setRole(e.target.value)}
-                >
-                    <MenuItem value = 'Doctor'>Doctor</MenuItem>
-                    <MenuItem value = 'Patient'>Patient</MenuItem>
-                    <MenuItem value = 'Admin'>Admin</MenuItem>
-                </Select>
-              <TextField
-                  margin="normal"
-                  required
-                  fullWidth
-                  id="name"
-                  label="Name"
-                  name="name"
-                  autoComplete="name"
-                  onChange={(e) => setName(e.target.value)}
-                  autoFocus
-                />
+              <Box component="form" noValidate onSubmit={handleReset} sx={{ mt: 1 }}>
                 <TextField
                   margin="normal"
                   required
@@ -110,43 +104,56 @@ export default function BasicTextFields({ title, setPassword, setEmail, setRole,
                   label="Email Address"
                   name="email"
                   autoComplete="email"
-                  onChange={(e) => setEmail(e.target.value)}
                   autoFocus
-                />
-                <TextField
-                  margin="normal"
-                  required
-                  fullWidth
-                  name="password"
-                  label="Password"
-                  type="password"
-                  id="password"
-                  autoComplete="current-password"
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-                <FormControlLabel
-                  control={<Checkbox value="remember" color="primary" />}
-                  label="I agree to all terms and conditions."
+                  onChange={(e) => setEmail(e.target.value)}
                 />
                 <Button
                   type="submit"
                   fullWidth
                   variant="contained"
                   sx={{ mt: 3, mb: 2 }}
-                  handleAction={handleAction}
                 >
-                  Sign Up
+                  Send Reset Email
                 </Button>
-                  <Grid item>
-                    <Link href="/login" variant="body2">
-                      {"Already have an account? Sign in"}
-                    </Link>
-                  </Grid>
                 <Copyright sx={{ mt: 5 }} />
               </Box>
             </Box>
           </Grid>
         </Grid>
       </ThemeProvider>
-    );
+      );
+    // return (
+    //     <div>
+    //         <div className="heading-container">
+    //             <h3>
+    //             {title} Form
+    //             </h3>
+    //         </div>
+
+    //         <Box
+    //             component="form"
+    //             sx={{
+    //                 '& > :not(style)': { m: 1, width: '25ch' },
+    //             }}
+    //             noValidate
+    //             autoComplete="off"
+    //         >
+
+    //              <TextField
+    //                 id="email"
+    //                 label="Enter the Email"
+    //                 variant="outlined"
+    //                 onChange={(e) => setEmail(e.target.value)}
+    //             />
+    //             <TextField
+    //                 id="password"
+    //                 label="Enter the Password"
+    //                 variant="outlined"
+    //                 onChange={(e) => setPassword(e.target.value)}
+    //             />
+    //         </Box>
+
+    //         <Button title={title} handleAction={handleAction}/>
+    //     </div>
+    // );
 }

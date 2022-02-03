@@ -7,6 +7,14 @@ import { getStorage, uploadBytes, collection, getDocs } from "firebase/storage";
 import TextField from '@mui/material/TextField';
 import { app, storage, db, database } from '../firebase-config';
 import { ref, child, get, push, update } from "firebase/database";
+import Button from '@mui/material/Button';
+import ButtonGroup from '@mui/material/ButtonGroup';
+import Checkbox from '@mui/material/Checkbox';
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Slider from '@mui/material/Slider';
+import VolumeDown from '@mui/icons-material/VolumeDown';
+import VolumeUp from '@mui/icons-material/VolumeUp';
 export default function HomeAdmin() {
     const [selectedFile, setSelectedFile] = useState();
     const [fileName, setFileName] = useState('');
@@ -15,6 +23,11 @@ export default function HomeAdmin() {
 		setSelectedFile(event.target.files[0]);
 		setIsFilePicked(true);
 	};
+    const [value, setValue] = React.useState(30);
+
+    const handleChange = (event, newValue) => {
+      setValue(newValue);
+    };
     // const dbRef = ref(database);
     // get(child(dbRef, `users`)).then((snapshot) => {
     // if (snapshot.exists()) {
@@ -63,8 +76,38 @@ export default function HomeAdmin() {
         </div> */}
         <div>    
             <button onClick={handleLogout}>Log out</button>
-            {/* <button onClick={handleSubmission(selectedFile,fileName)}> Upload File</button> */}
         </div>
+
+        <div>
+            <Button variant="contained" color="success">
+        Success
+
+        </Button>
         </div>
+
+      
+        <div>
+        <ButtonGroup variant="contained" aria-label="outlined primary button group">
+      <Button>One</Button>
+      <Button>Two</Button>
+      <Button>Three</Button>
+    </ButtonGroup>
+        </div>
+        <div>
+        <Box sx={{ width: 200 }}>
+      <Stack spacing={2} direction="row" sx={{ mb: 1 }} alignItems="center">
+        <VolumeDown />
+        <Slider aria-label="Volume" value={value} onChange={handleChange} />
+        <VolumeUp />
+      </Stack>
+      <Slider disabled defaultValue={30} aria-label="Disabled slider" />
+    </Box>
+    <div>
+    <Button variant="contained">Contained</Button>
+    </div>
+        </div>
+
+        </div>
+        
     )
 }
