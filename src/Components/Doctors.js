@@ -41,78 +41,50 @@ import eye from '../images/left_eye.png'
 import health_report from '../images/health-report.png';
 import { keyframes } from '@mui/system';
 import theme from './theme';
-import {
-    FilterList,
-    FilterLiveSearch,
-    FilterListItem,
-    useGetIdentity,
-    useGetList,
-} from 'react-admin';
+import { app, storage, database } from '../firebase-config';
+import { ref, child, get, push, update } from "firebase/database";
+import { getStorage, uploadBytes, ref as sref, getDownloadURL, getMetadata } from "firebase/storage";
+import ListItem from '@mui/material/ListItem';
+import ListItemAvatar from '@mui/material/ListItemAvatar';
+import ListItemText from '@mui/material/ListItemText';
+import DialogTitle from '@mui/material/DialogTitle';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import PersonIcon from '@mui/icons-material/Person';
+import AddIcon from '@mui/icons-material/Add';
+import { blue } from '@mui/material/colors';
+import PropTypes from 'prop-types';
+import Slide from '@mui/material/Slide';
 
-const itemData = [
-    {
-      img: 'https://images.pexels.com/photos/4173251/pexels-photo-4173251.jpeg',
-      title: 'John Doe',
-      author: 'MD MS',
-      rows: 2,
-      cols: 2,
-      featured: true,
-    },
-    {
-        img: 'https://images.pexels.com/photos/2182979/pexels-photo-2182979.jpeg',
-        title: 'John Doe',
-        author: 'MD MS',
-        rows: 2,
-        cols: 2,
-        featured: true,
-      },
-      {
-        img: 'https://images.pexels.com/photos/4173239/pexels-photo-4173239.jpeg',
-        title: 'John Doe',
-        author: 'MD MS',
-        rows: 2,
-        cols: 2,
-        featured: true,
-      },
-      {
-        img: 'https://images.pexels.com/photos/4173251/pexels-photo-4173251.jpeg',
-        title: 'John Doe',
-        author: 'MD MS',
-        rows: 2,
-        cols: 2,
-        featured: true,
-      },
-      {
-        img: 'https://images.pexels.com/photos/4173251/pexels-photo-4173251.jpeg',
-        title: 'John Doe',
-        author: 'MD MS',
-        rows: 2,
-        cols: 2,
-        featured: true,
-      },
-    
-  ];
+const Transition = React.forwardRef(function Transition(props, ref) {
+  return <Slide direction="up" ref={ref} {...props} />;
+});
+function SimpleDialog(props) {
+  const { onClose, open, name, description } = props;
 
-// const getColorFromStatus = (status) =>
-//     status === 'cold'
-//         ? '#7dbde8'
-//         : status === 'warm'
-//         ? '#e8cb7d'
-//         : status === 'hot'
-//         ? '#e88b7d'
-//         : status === 'in-contract'
-//         ? '#a4e87d'
-//         : '#000';
-//  const Status = ({ status }) => (
-//     <Box
-//         width={10}
-//         height={10}
-//         display="inline-block"
-//         borderRadius={5}
-//         bgcolor={getColorFromStatus(status)}
-//         component="span"
-//     />
-// );
+  const handleClose = () => {
+    onClose('');
+  };
+
+
+  return (
+    <Dialog TransitionComponent={Transition} onClose={handleClose} open={open}>
+      <DialogTitle>{name}</DialogTitle>
+      <DialogContent dividers>
+          <Typography gutterBottom>
+            {description}
+          </Typography>
+        </DialogContent>
+    </Dialog>
+  );
+}
+
+SimpleDialog.propTypes = {
+  onClose: PropTypes.func.isRequired,
+  open: PropTypes.bool.isRequired,
+  name: PropTypes.string.isRequired,
+  description: PropTypes.string.isRequired,
+};
 const drawerWidth = 240;
 const spin = keyframes`
 from {
@@ -159,54 +131,55 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
 );
 const mdTheme = createTheme();
 export default function Doctors() {
+  const [name, setName] = React.useState('');
+  const [description, setDescription] = React.useState('');
+  const [imgsrc, setImgSrc] = React.useState('https://i.imgur.com/Rbp9NSp.jpg');
+  const [popopen, setPopOpen] = React.useState(false);
+  const [doctorarray,setDoctorArray] = useState([]);
   const [open, setOpen] = React.useState(true);
+
+
+  const handleClose = (value) => {
+    setPopOpen(false);
+  };
   const toggleDrawer = () => {
     setOpen(!open);
   };
-    const [value, setValue] = React.useState(0);
-
-    const handleChange = (event, newValue) => {
-        setValue(newValue);
-    };
-
-    const handleChangeIndex = (index) => {
-        setValue(index);
-    };
-    const pages = ['Features', 'About Us', 'Contact'];
-    const settings = ['Profile', 'Account', 'Dashboard', 'Logout'];
-
-    const [anchorElNav, setAnchorElNav] = React.useState(null);
-    const [anchorElUser, setAnchorElUser] = React.useState(null);
-
-    const handleOpenNavMenu = (event) => {
-        setAnchorElNav(event.currentTarget);
-    };
-    const handleOpenUserMenu = (event) => {
-        setAnchorElUser(event.currentTarget);
-    };
-
-    const handleCloseNavMenu = () => {
-        setAnchorElNav(null);
-    };
-
-    const handleCloseUserMenu = () => {
-        setAnchorElUser(null);
-    };
-    const [selectedFile, setSelectedFile] = useState();
-    const [fileName, setFileName] = useState('');
-	const [isFilePicked, setIsFilePicked] = useState(false);
-    const changeHandler = (event) => {
-		setSelectedFile(event.target.files[0]);
-		setIsFilePicked(true);
-	};
-    const handleLogout = () => {
-        sessionStorage.removeItem('Auth Token');
-        navigate('/login')
-    }
     let navigate = useNavigate();
     useEffect(() => {
+        let uid = sessionStorage.getItem('UID')
         let authToken = sessionStorage.getItem('Auth Token')
+        let dbRef = ref(database);
+        get(child(dbRef, `doctors`)).then((snapshot) => {
+          let snapshot_val = snapshot.val();
+          console.log(snapshot_val)
+          var temparray = []
+          for (const [key, value] of Object.entries(snapshot_val)) {
+            var temp = {img: value.image
+                          ,title: value.name
+                          ,uid: key
+                          ,hospital: value.hospital
+                          ,detail: value.detail
+                          ,rows: 2
+                          ,cols: 2
+                          ,featured: true,}
+            temparray.push(temp)
+            
+            console.log(doctorarray);
+          }
+          console.log(temparray)
+          setDoctorArray(temparray);
+        })
+        getDownloadURL(sref(storage, uid + '/profile_pic'))
+        .then((url) => {
+          setImgSrc(url);
+        })
+        .catch((error) => {
+          console.log(error);
+          console.log("Profile picture not available.")
+        });
         console.log(authToken)
+        console.log(doctorarray);
         if (authToken) {
             navigate('/doctors')
         }
@@ -246,7 +219,7 @@ export default function Doctors() {
             >
               Tele-Medicine
             </Typography>
-            <Avatar>N</Avatar>
+            <Avatar src = {imgsrc}></Avatar>
           </Toolbar>
         </AppBar>
         <Drawer variant="permanent" open={open}>
@@ -284,8 +257,8 @@ export default function Doctors() {
       <ImageListItem key="Subheader" cols={2}>
         <ListSubheader component="div">December</ListSubheader>
       </ImageListItem>
-      {itemData.map((item) => (
-        <ImageListItem key={item.img}>
+      {doctorarray.map((item) => (
+        <ImageListItem key={item.uid}>
           <img
             src={`${item.img}`}
             srcSet={`${item.img}`}
@@ -294,16 +267,23 @@ export default function Doctors() {
           />
           <ImageListItemBar
             title={item.title}
-            subtitle={item.author}
+            subtitle={item.hospital}
             actionIcon={
               <Button
                 sx={{ color: 'rgba(255, 255, 255, 0.54)' }}
-                aria-label={`book ${item.author}`}
+                key={item.uid}
                 variant="contained"
+                onClick = {() => {setPopOpen(true); setName(item.title); setDescription(item.detail)}}
               >
-                Book Appointment
+                <InfoIcon />
               </Button>
             }
+          />
+          <SimpleDialog
+              open={popopen}
+              onClose={handleClose}
+              name = {name}
+              description = {description}
           />
         </ImageListItem>
       ))}

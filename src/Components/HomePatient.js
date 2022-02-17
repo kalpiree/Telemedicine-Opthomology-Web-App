@@ -32,40 +32,9 @@ import { keyframes } from '@mui/system';
 import theme from './theme';
 import { app, storage, database } from '../firebase-config';
 import { ref, child, get, push, update } from "firebase/database";
-import { getStorage, uploadBytes, ref as sref, getDownloadURL } from "firebase/storage";
-// import { ref, child, get, push, update } from "firebase/database";
-const handleBloodReport = (folder,file,isFilePicked,filename) => {
-  if(isFilePicked){
-    console.log(file)
-    const storage = getStorage();
-    const storageRef = sref(storage, folder + '/' + filename);
-    uploadBytes(storageRef, file).then((snapshot) => {
-        console.log('Uploaded blood report!');
-      });
-  }
-};
-
-const handleEyeReport = (folder,file,isFilePicked,filename) => {
-	if(isFilePicked){
-	  console.log(file)
-	  const storage = getStorage();
-	  const storageRef = sref(storage, folder + '/' + filename);
-	  uploadBytes(storageRef, file).then((snapshot) => {
-		  console.log('Uploaded eye report!');
-		});
-	}
-  };
-
-const handleHealthReport = (folder,file,isFilePicked,filename) => {
-if(isFilePicked){
-	console.log(file)
-	const storage = getStorage();
-	const storageRef = sref(storage, folder + '/' + filename);
-	uploadBytes(storageRef, file).then((snapshot) => {
-		console.log('Uploaded health report!');
-	});
-}
-};
+import { getStorage, uploadBytes, ref as sref, getDownloadURL, getMetadata } from "firebase/storage";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 const drawerWidth = 240;
 const Input = styled('input')({
   display: 'none',
@@ -122,35 +91,102 @@ export default function HomePatient() {
   const [name, setName] = React.useState('-');
   const [city, setCity] = React.useState('-');
   const [open, setOpen] = React.useState(true);
+  const [brDate, setbrDate] = React.useState('Not Available')
+  const [erDate, seterDate] = React.useState('Not Available')
+  const [hrDate, sethrDate] = React.useState('Not Available')
   const [imgsrc, setImgSrc] = React.useState('https://i.imgur.com/Rbp9NSp.jpg');
   const toggleDrawer = () => {
     setOpen(!open);
   };
   const [selectedBloodReport, setSelectedBloodReport] = useState();
-	const [isBloodReportPicked, setIsBloodReportPicked] = useState(false);
+	const [isBloodReportPicked, setIsBloodReportPicked] = useState('Finish');
   const changeBloodReport = (event) => {
-		if(!isBloodReportPicked){
 			setSelectedBloodReport(event.target.files[0]);
-    	setIsBloodReportPicked(true);
-		}	
+    	setIsBloodReportPicked('Ready');	
   };
 	const [selectedEyeReport, setSelectedEyeReport] = useState();
-	const [isEyeReportPicked, setIsEyeReportPicked] = useState(false);
+	const [isEyeReportPicked, setIsEyeReportPicked] = useState('Finish');
 	const changeEyeReport = (event) => {
 		setSelectedEyeReport(event.target.files[0]);
-		setIsEyeReportPicked(true);
+		setIsEyeReportPicked('Ready');
 	};
 	const [selectedHealthReport, setSelectedHealthReport] = useState();
-	const [isHealthReportPicked, setIsHealthReportPicked] = useState(false);
+	const [isHealthReportPicked, setIsHealthReportPicked] = useState('Finish');
 	const changeHealthReport = (event) => {
 		setSelectedHealthReport(event.target.files[0]);
-		setIsHealthReportPicked(true);
+		setIsHealthReportPicked('Ready');
 	};
-    
+   
+  const downloadBloodReport = (event) => {
+    let uid = sessionStorage.getItem('UID');
+    getDownloadURL(sref(storage, uid + '/blood_report'))
+    .then((url) => {
+      const xhr = new XMLHttpRequest();
+      xhr.responseType = 'blob';
+      xhr.onload = (event) => {
+        const blob = xhr.response;
+        const url = window.URL.createObjectURL(new Blob([blob]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `blood_report.jpg`);
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode.removeChild(link);
+      };
+      xhr.open('GET', url)
+      xhr.send();
+      console.log("Downloaded blood report");
+    });
+  }
+
+  const downloadEyeReport= (event) => {
+    let uid = sessionStorage.getItem('UID');
+    getDownloadURL(sref(storage, uid + '/eye_report'))
+    .then((url) => {
+      const xhr = new XMLHttpRequest();
+      xhr.responseType = 'blob';
+      xhr.onload = (event) => {
+        const blob = xhr.response;
+        const url = window.URL.createObjectURL(new Blob([blob]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `eye_report.jpg`);
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode.removeChild(link);
+      };
+      xhr.open('GET', url)
+      xhr.send();
+      console.log("Downloaded eye report");
+    });
+  }
+
+  const downloadHealthReport= (event) => {
+    let uid = sessionStorage.getItem('UID');
+    getDownloadURL(sref(storage, uid + '/health_report'))
+    .then((url) => {
+      const xhr = new XMLHttpRequest();
+      xhr.responseType = 'blob';
+      xhr.onload = (event) => {
+        const blob = xhr.response;
+        const url = window.URL.createObjectURL(new Blob([blob]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `health_report.jpg`);
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode.removeChild(link);
+      };
+      xhr.open('GET', url)
+      xhr.send();
+      console.log("Downloaded health report");
+    });
+  }
   let navigate = useNavigate();
   useEffect(() => {
     let authToken = sessionStorage.getItem('Auth Token')
     let uid = sessionStorage.getItem('UID')
+    var options = { year: 'numeric', month: 'long', day: 'numeric' };
     console.log(authToken)
     if (authToken) {
         navigate('/homepatient')
@@ -163,6 +199,7 @@ export default function HomePatient() {
     let dbRef = ref(database);
     get(child(dbRef, `users`)).then((snapshot) => {
       let snapshot_val = snapshot.val();
+      
       let uid = sessionStorage.getItem('UID')
       if('name' in snapshot_val[uid]){
         let name = snapshot_val[uid]['name'];
@@ -214,11 +251,98 @@ export default function HomePatient() {
       if('city' in snapshot_val[uid]){
         setCity(snapshot_val[uid]['city']);
       }})
+    if(isBloodReportPicked == 'Ready'){
+      console.log(selectedBloodReport)
+      let uid = sessionStorage.getItem('UID');
+      const storageRef = sref(storage, uid + '/blood_report');
+      uploadBytes(storageRef, selectedBloodReport).then((snapshot) => {
+        console.log(snapshot)
+          console.log('Uploaded blood report!');
+          setIsBloodReportPicked('Finish');
+          toast.success('Your blood report is uploaded.',{autoClose: 2000});
+      });
+      getMetadata(sref(storage, uid + '/blood_report'))
+      .then((metadata) => {
+        const meta_date = new Date(metadata.updated)
+        setbrDate(meta_date.toLocaleDateString('en-GB',options))
+      })
+      .catch((error) => {
+        console.log(error)
+        console.log('Blood report not available')
+      });
+    }
+    if(isEyeReportPicked == 'Ready'){
+      console.log(selectedEyeReport)
+      let uid = sessionStorage.getItem('UID');
+      const storageRef = sref(storage, uid + '/eye_report');
+      uploadBytes(storageRef, selectedEyeReport).then((snapshot) => {
+        console.log(snapshot)
+          console.log('Uploaded eye report!');
+          setIsEyeReportPicked('Finish');
+          toast.success('Your eye report is uploaded.',{autoClose: 2000});
+      });
+      getMetadata(sref(storage, uid + '/eye_report'))
+      .then((metadata) => {
+        const meta_date = new Date(metadata.updated)
+        seterDate(meta_date.toLocaleDateString('en-GB',options))
+      })
+      .catch((error) => {
+        console.log('Eye report not available')
+      });
+    }
+    if(isHealthReportPicked == 'Ready'){
+      console.log(selectedHealthReport)
+      let uid = sessionStorage.getItem('UID');
+      const storageRef = sref(storage, uid + '/health_report');
+      uploadBytes(storageRef, selectedHealthReport).then((snapshot) => {
+        console.log(snapshot)
+          console.log('Uploaded health report!');
+          setIsHealthReportPicked('Finish');
+          toast.success('Your health report is uploaded.',{autoClose: 2000});
+      });
+      getMetadata(sref(storage, uid + '/health_report'))
+      .then((metadata) => {
+        const meta_date = new Date(metadata.updated)
+        sethrDate(meta_date.toLocaleDateString('en-GB',options))
+      })
+      .catch((error) => {
+        console.log('Health report not available')
+      });
+    }
     getDownloadURL(sref(storage, uid + '/profile_pic'))
     .then((url) => {
       setImgSrc(url);
+    })
+    .catch((error) => {
+      console.log(error);
+      console.log("Profile picture not available.")
     });
-  }, [])
+    getMetadata(sref(storage, uid + '/blood_report'))
+    .then((metadata) => {
+      const meta_date = new Date(metadata.updated)
+      setbrDate(meta_date.toLocaleDateString('en-GB',options))
+    })
+    .catch((error) => {
+      console.log(error)
+      console.log('Blood report not available')
+    });
+    getMetadata(sref(storage, uid + '/eye_report'))
+    .then((metadata) => {
+      const meta_date = new Date(metadata.updated)
+      seterDate(meta_date.toLocaleDateString('en-GB',options))
+    })
+    .catch((error) => {
+      console.log('Eye report not available')
+    });
+    getMetadata(sref(storage, uid + '/health_report'))
+    .then((metadata) => {
+      const meta_date = new Date(metadata.updated)
+      sethrDate(meta_date.toLocaleDateString('en-GB',options))
+    })
+    .catch((error) => {
+      console.log('Health report not available')
+    });
+  }, [isBloodReportPicked,isEyeReportPicked,isHealthReportPicked])
   return (
     <ThemeProvider theme={theme}>
       <Box sx={{ display: 'flex' }}>
@@ -314,17 +438,17 @@ export default function HomePatient() {
                           Blood Test Report
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
-                          Date uploaded: 12/01/2002
+                          Date uploaded: {brDate}
                           </Typography>
                       </CardContent>
                       <CardActions sx={{ justifyContent: "center" }}>
                       <label htmlFor="contained-button-file-1">
                         <Input accept="image/*|*.pdf" id="contained-button-file-1" multiple type="file" onChange={changeBloodReport} />
-                        <Button size = "small" component="span" type="button" onClick={handleBloodReport('foldername', selectedBloodReport, isBloodReportPicked, 'blood_report')}>
+                        <Button size = "small" component="span" type="button" >
                           Upload
                         </Button>
                       </label>
-                          <Button size="small">Download</Button>
+                          <Button size="small" onClick = {downloadBloodReport}>Download</Button>
                       </CardActions>
                     </Card>
                   </Grid>
@@ -343,17 +467,17 @@ export default function HomePatient() {
                           Eye Test Report
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
-                          Date uploaded: 12/01/2002
+                          Date uploaded: {erDate}
                           </Typography>
                       </CardContent>
                       <CardActions sx={{ justifyContent: "center" }}>
                           <label htmlFor="contained-button-file-2">
                             <Input accept= "image/*|*.pdf" id="contained-button-file-2" multiple type="file" onChange={changeEyeReport} />
-                            <Button size = "small" component="span" type="button" onClick={handleEyeReport('foldername', selectedEyeReport, isEyeReportPicked, 'eye_test_report')}>
+                            <Button size = "small" component="span" type="button">
                               Upload
                             </Button>
                           </label>
-                          <Button size="small">Download</Button>
+                          <Button size="small" onClick = {downloadEyeReport}>Download</Button>
                       </CardActions>
                     </Card>
                   </Grid>
@@ -372,17 +496,17 @@ export default function HomePatient() {
                           Full Body Report
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
-                          Date uploaded: 12/01/2002
+                          Date uploaded: {hrDate}
                           </Typography>
                       </CardContent>
                       <CardActions sx={{ justifyContent: "center" }}>
                           <label htmlFor="contained-button-file-3">
                             <Input accept= "image/*|*.pdf" id="contained-button-file-3" multiple type="file"  onChange={changeHealthReport} />
-                            <Button size = "small" component="span" type="button" onClick={handleHealthReport('foldername', selectedHealthReport, isHealthReportPicked, 'health_report')}>
+                            <Button size = "small" component="span" type="button" >
                               Upload
                             </Button>
                           </label>
-                          <Button size="small">Download</Button>
+                          <Button size="small" onClick = {downloadHealthReport}>Download</Button>
                       </CardActions>
                     </Card> 
                   </Grid>

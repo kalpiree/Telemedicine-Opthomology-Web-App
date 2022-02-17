@@ -47,11 +47,30 @@ import { ref, child, get, push, update } from "firebase/database";
 import { getStorage, uploadBytes, ref as sref, getDownloadURL } from "firebase/storage";
 import { SettingsApplicationsTwoTone } from '@material-ui/icons';
 import { ToastContainer, toast } from 'react-toastify';
+
+import { DataGrid, GridToolbar } from "@mui/x-data-grid";
+import { Link } from "@material-ui/core";
+import { styled } from '@mui/material/styles';
 //import 'react-toastify/dist/ReactToastify.css';
 
+import ToggleButton from '@mui/material/ToggleButton';
 
 
-const drawerWidth = 220;
+
+
+const rows = [
+    { id: 1, lastName: "Snow", firstName: "Jon", age: 35, location: "Chennai" },
+    { id: 2, lastName: "Lannister", firstName: "Cersei", age: 42, location: "Bangalore" },
+    { id: 3, lastName: "Lannister", firstName: "Jaime", age: 45, location: "kolkata" },
+    { id: 4, lastName: "Stark", firstName: "Arya", age: 16, location: "Hyderabad" },
+    { id: 5, lastName: "Targaryen", firstName: "Daenerys", age: null, location: "Delhi" },
+    { id: 6, lastName: null, firstName: "Melisandre", age: 15, location: "Lucknow" },
+    { id: 7, lastName: "Clifford", firstName: "Ferrara", age: 44, location: "Patna" },
+    { id: 8, lastName: "Frances", firstName: "Rossini", age: 36, location: "Bihar" },
+    { id: 9, lastName: "Roxie", firstName: "Harvey", age: 65, location: "Mumbai" }
+];
+const drawerWidth = 240;
+
 
 
 
@@ -96,6 +115,7 @@ export default function HomeAdmin() {
         setValue(newValue);
     };
 
+
     const [selectedFile, setSelectedFile] = useState();
     const [fileName, setFileName] = useState('');
     const [isFilePicked, setIsFilePicked] = useState(false);
@@ -126,6 +146,7 @@ export default function HomeAdmin() {
     const handleMouseDownPassword = (event) => {
         event.preventDefault();
     };
+    const [selected, setSelected] = React.useState(false);
     const [date, setDate] = React.useState(new Date());
     const [bloodGroup, setBloodGroup] = React.useState('');
     const [gender, setGender] = React.useState('');
@@ -138,40 +159,51 @@ export default function HomeAdmin() {
     const [city, setCity] = React.useState('');
     const [state, setState] = React.useState('');
     const [country, setCountry] = React.useState('');
+    const [imgsrc, setImgSrc] = React.useState('https://i.imgur.com/Rbp9NSp.jpg');
+    const [selectedProfilePic, setSelectedProfilePic] = useState();
+    const [isProfilePicPicked, setIsProfilePicPicked] = useState(false);
+    const changeProfilePic = (event) => {
+        console.log("Entered profilepic")
+        setSelectedProfilePic(event.target.files[0]);
+        setIsProfilePicPicked(true);
+    };
     const handleChangeFirstName = (event) => {
         setFirstName(event.target.value);
-      };
+    };
     const handleChangeMiddleName = (event) => {
         setMiddleName(event.target.value);
-      };
+    };
     const handleChangeLastName = (event) => {
         setLastName(event.target.value);
-      };
+    };
     const handleChangeMob = (event) => {
         setMob(event.target.value);
-      };
+    };
     const handleChangeAddress1 = (event) => {
         setAddress1(event.target.value);
-      };
+    };
     const handleChangeAddress2 = (event) => {
         setAddress2(event.target.value);
-      };
+    };
     const handleChangeCity = (event) => {
         setCity(event.target.value);
-      };
+    };
     const handleChangeState = (event) => {
         setState(event.target.value);
-      };
+    };
     const handleChangeCountry = (event) => {
         setCountry(event.target.value);
-      };
-      const handleChangeBloodGroup = (event) => {
+    };
+    const handleChangeBloodGroup = (event) => {
         setBloodGroup(event.target.value);
-      };
-    
-      const handleChangegender = (event) => {
+    };
+
+    const handleChangegender = (event) => {
         setGender(event.target.value);
-      };
+    };
+    const Input = styled('input')({
+        display: 'none',
+    });
     const handleSubmitData = (event) => {
         let dbRef = ref(database);
         get(child(dbRef, `users`)).then((snapshot) => {
@@ -180,30 +212,99 @@ export default function HomeAdmin() {
             const email = snapshot_val[uid]['email'];
             const role = snapshot_val[uid]['role'];
             const postData = {
-              name: firstname + ' ' + lastname,
-              role: role,
-              email: email,
-              gender: gender,
-              mob: mob,
-              bloodgroup: bloodGroup,
-              dob: date,
-              address1: address1,
-              address2: address2,
-              city: city,
-              state: state,
-              country: country
+                name: firstname + ' ' + lastname,
+                role: role,
+                email: email,
+                gender: gender,
+                mob: mob,
+                bloodgroup: bloodGroup,
+                dob: date,
+                address1: address1,
+                address2: address2,
+                city: city,
+                state: state,
+                country: country
             };
             console.log(postData)
             const updates = {};
             updates['/users/' + uid] = postData;
             update(dbRef, updates);
-          });
-          toast.success('Your profile data is updated.',{autoClose: 2000});
+        });
+        toast.success('Your profile data is updated.', { autoClose: 2000 });
     }
+    const handleProfilePic = (file) => {
+        if (isProfilePicPicked) {
+            console.log(file)
+            let uid = sessionStorage.getItem('UID');
+            const storageRef = sref(storage, uid + '/profile_pic');
+            uploadBytes(storageRef, file).then((snapshot) => {
+                console.log('Uploaded profile pic!');
+            });
+            
+        }
+    };
+    const columns = [
+        { field: "id", headerName: "ID" },
+        {
+            field: "fullName",
+            headerName: "Full name",
+            width: 300,
+            sortable: false,
+            valueGetter: (params) =>
+                `${params.row.firstName || ""} ${params.row.lastName || ""}`
+        },
+        { field: "age", headerName: "Age", type: "number", width: 100 },
+        {
+            field: "email",
+            headerName: "Email",
+            width: 300,
+            valueGetter: (params) =>
+                `${params.row.firstName || ""}${params.row.lastName || ""}@gmail.com`
+        },
+        {
+            field: "location",
+            headerName: "Location",
+        },
+        {
+            field: "profile",
+            headerName: "Profile Details",
+            width: 125,
+            renderCell: (cellValues) => {
+                return (
+                    <Link href={`about:blank`} target="_blank">
+                        Profile
+                    </Link>
+                );
+            }
+        },
+        {
+            field: "verification",
+            headerName: "Verification Status",
+            width: "30%",
+            renderCell: (cellValues) => {
+                return (
+                    <ToggleButton
+                        value="check"
+                        selected={selected}
+                        color="success"
+                        onChange={() => {
+                            setSelected(!selected);
+                        }}
+                    >
+                        {String(selected)}
+                    </ToggleButton>
+                );
+            }
+        }
+    ];
+
 
     let navigate = useNavigate();
     useEffect(() => {
         let authToken = sessionStorage.getItem('Auth Token')
+        let uid = sessionStorage.getItem('UID')
+        console.log(uid)
+        console.log(authToken)
         if (authToken) {
             navigate('/homeadmin')
         }
@@ -212,42 +313,46 @@ export default function HomeAdmin() {
             navigate('/register')
         }
         let dbRef = ref(database);
-      get(child(dbRef, `users`)).then((snapshot) => {
-        let snapshot_val = snapshot.val();
-        let uid = sessionStorage.getItem('UID')
-        if('name' in snapshot_val[uid]){
-          let name = snapshot_val[uid]['name'];
-          setFirstName(name.split(" ")[0]);
-          setLastName(name.split(" ")[1]);
-        }
-        if('gender' in snapshot_val[uid]){
-          setGender(snapshot_val[uid]['gender']);
-        }
-        if('mob' in snapshot_val[uid]){
-          setMob(snapshot_val[uid]['mob']);
-        }
-        if('bloodgroup' in snapshot_val[uid]){
-          setBloodGroup(snapshot_val[uid]['bloodgroup']);
-        }
-        if('dob' in snapshot_val[uid]){
-          setDate(snapshot_val[uid]['dob']);
-        }
-        if('address1' in snapshot_val[uid]){
-          setAddress1(snapshot_val[uid]['address1']);
-        }
-        if('address2' in snapshot_val[uid]){
-          setAddress2(snapshot_val[uid]['address2']);
-        }
-        if('city' in snapshot_val[uid]){
-          setCity(snapshot_val[uid]['city']);
-        }
-        if('state' in snapshot_val[uid]){
-          setState(snapshot_val[uid]['state']);
-        }
-        if('country' in snapshot_val[uid]){
-          setCountry(snapshot_val[uid]['country']);
-        }
-      });
+        get(child(dbRef, `users`)).then((snapshot) => {
+            let snapshot_val = snapshot.val();
+            let uid = sessionStorage.getItem('UID')
+            if ('name' in snapshot_val[uid]) {
+                let name = snapshot_val[uid]['name'];
+                setFirstName(name.split(" ")[0]);
+                setLastName(name.split(" ")[1]);
+            }
+            if ('gender' in snapshot_val[uid]) {
+                setGender(snapshot_val[uid]['gender']);
+            }
+            if ('mob' in snapshot_val[uid]) {
+                setMob(snapshot_val[uid]['mob']);
+            }
+            if ('bloodgroup' in snapshot_val[uid]) {
+                setBloodGroup(snapshot_val[uid]['bloodgroup']);
+            }
+            if ('dob' in snapshot_val[uid]) {
+                setDate(snapshot_val[uid]['dob']);
+            }
+            if ('address1' in snapshot_val[uid]) {
+                setAddress1(snapshot_val[uid]['address1']);
+            }
+            if ('address2' in snapshot_val[uid]) {
+                setAddress2(snapshot_val[uid]['address2']);
+            }
+            if ('city' in snapshot_val[uid]) {
+                setCity(snapshot_val[uid]['city']);
+            }
+            if ('state' in snapshot_val[uid]) {
+                setState(snapshot_val[uid]['state']);
+            }
+            if ('country' in snapshot_val[uid]) {
+                setCountry(snapshot_val[uid]['country']);
+            }
+        });
+        getDownloadURL(sref(storage, uid + '/profile_pic'))
+            .then((url) => {
+                setImgSrc(url);
+            });
     }, [])
     return (
         <Box sx={{ flexGrow: 1, bgcolor: "background.paper", display: "flex" }}>
@@ -296,6 +401,7 @@ export default function HomeAdmin() {
                 <Toolbar />
                 <Divider />
                 <Avatar
+                    src={imgsrc}
                     sx={{
                         width: 80,
                         height: 80,
@@ -304,6 +410,9 @@ export default function HomeAdmin() {
                         bgcolor: "Background"
                     }}
                 />
+                {/* </Avatar> */}
+
+
                 <Typography sx={{ alignSelf: "center", mb: 2 }}>ADMIN</Typography>
                 <Divider />
                 <Tabs
@@ -362,13 +471,13 @@ export default function HomeAdmin() {
                     <CssBaseline />
                     <Grid container spacing={2} >
                         <Grid item xs={4}>
-                            <TextField required id="first_name" label="First Name" variant="outlined" autoWidth sx={{ m: '2', minWidth: '25ch' }} value = {firstname} onChange = {handleChangeFirstName}/>
+                            <TextField required id="first_name" label="First Name" variant="outlined" autoWidth sx={{ m: '2', minWidth: '25ch' }} value={firstname} onChange={handleChangeFirstName} />
                         </Grid>
                         <Grid item xs={4}>
-                            <TextField id="middle_name" label="Middle Name" variant="outlined" autoWidth sx={{ m: '2', minWidth: '25ch' }} value = {middlename} onChange = {handleChangeMiddleName} />
+                            <TextField id="middle_name" label="Middle Name" variant="outlined" autoWidth sx={{ m: '2', minWidth: '25ch' }} value={middlename} onChange={handleChangeMiddleName} />
                         </Grid>
                         <Grid item xs={4}>
-                            <TextField required id="last_name" label="Last Name" variant="outlined" autoWidth sx={{ m: '2', minWidth: '25ch' }} value = {lastname} onChange = {handleChangeLastName} />
+                            <TextField required id="last_name" label="Last Name" variant="outlined" autoWidth sx={{ m: '2', minWidth: '25ch' }} value={lastname} onChange={handleChangeLastName} />
                         </Grid>
                         <Grid item xs={4}>
                             <FormControl required sx={{ m: 2, minWidth: 120 }}>
@@ -410,7 +519,7 @@ export default function HomeAdmin() {
                             </FormControl>
                         </Grid>
                         <Grid item xs={4}>
-                            <TextField required id="mob" label="Mobile Number" variant="outlined" sx={{ m: 2, minWidth: 150 }}  value = {mob} onChange = {handleChangeMob} />
+                            <TextField required id="mob" label="Mobile Number" variant="outlined" sx={{ m: 2, minWidth: 150 }} value={mob} onChange={handleChangeMob} />
                         </Grid>
                         <Grid item xs={4}>
                             <Box sx={{ m: 2 }}>
@@ -428,50 +537,48 @@ export default function HomeAdmin() {
                             </Box>
                         </Grid>
                         <Grid item xs={4}>
-                            <TextField required id="address1" label="Address Line 1" variant="outlined" sx={{ m: 2 }}  value = {address1} onChange = {handleChangeAddress1} />
+                            <TextField required id="address1" label="Address Line 1" variant="outlined" sx={{ m: 2 }} value={address1} onChange={handleChangeAddress1} />
                         </Grid>
                         <Grid item xs={4}>
-                            <TextField id="address2" label="Address Line 2" variant="outlined" sx={{ m: 2 }}  value = {address2} onChange = {handleChangeAddress2} />
+                            <TextField id="address2" label="Address Line 2" variant="outlined" sx={{ m: 2 }} value={address2} onChange={handleChangeAddress2} />
                         </Grid>
                         <Grid item xs={4}>
-                            <TextField required id="city" label="City" variant="outlined" sx={{ m: 2 }} onChange = {handleChangeCity} />
+                            <TextField required id="city" label="City" variant="outlined" sx={{ m: 2 }} onChange={handleChangeCity} />
                         </Grid>
                         <Grid item xs={4}>
-                            <TextField required id="state" label="State" variant="outlined" sx={{ m: 2 }} value = {state} onChange = {handleChangeState} />
+                            <TextField required id="state" label="State" variant="outlined" sx={{ m: 2 }} value={state} onChange={handleChangeState} />
                         </Grid>
                         <Grid item xs={4}>
-                            <TextField required id="country" label="Country" variant="outlined" sx={{ m: 2 }} value = {country} onChange = {handleChangeCountry} />
+                            <TextField required id="country" label="Country" variant="outlined" sx={{ m: 2 }} value={country} onChange={handleChangeCountry} />
                         </Grid>
                     </Grid>
                     <Button
                         type="submit"
                         variant="contained"
                         sx={{ mt: 3, mb: 2 }}
-                        onClick = {handleSubmitData}
+                        onClick={handleSubmitData}
                     >
                         Update Profile Data
                     </Button>
                     <Grid>
-                        <Button
-                            type="button"
-                            variant="contained"
-
-                            sx={{ mt: 3, mb: 2 }}
-                        >
-                            Update Profile picture
-                        </Button>
+                        <label htmlFor="profile-pic">
+                            <Input accept="image/*" id="profile-pic" multiple type="file" onChange={changeProfilePic} />
+                            <Button variant="contained" component="span" onClick={handleProfilePic(selectedProfilePic)}>
+                                Upload Profile Picture
+                            </Button>
+                        </label>
                     </Grid>
                 </TabPanel>
                 <TabPanel value={value} index={1}>
                     <CssBaseline />
-                    <Box justifyContent="center" sx={{ display: 'flex', flexWrap: 'wrap', ml:50, mt:15 }}>
+                    <Box justifyContent="center" sx={{ display: 'flex', flexWrap: 'wrap', ml: 50, mt: 10 }}>
                         <div>
                             <Typography variant="h5" align='center'>Change Password</Typography>
-                            <br/>
+                            <br />
                             <Grid item xs={4}>
                                 <TextField required id="email" label="Enter your Email ID" variant="outlined" sx={{ m: 2, minWidth: "50ch" }} />
                             </Grid>
-                            <FormControl sx={{ m: 2, width: '50ch'}} variant="outlined">
+                            <FormControl sx={{ m: 2, width: '50ch' }} variant="outlined">
                                 <InputLabel htmlFor="outlined-adornment-password">Type New Password</InputLabel>
                                 <OutlinedInput
                                     id="outlined-adornment-password"
@@ -516,7 +623,7 @@ export default function HomeAdmin() {
                                     label="Confirm New Password"
                                 />
                             </FormControl>
-                            <br/>
+                            <br />
                             <Button
                                 type="submit"
                                 variant="contained"
@@ -527,10 +634,6 @@ export default function HomeAdmin() {
                         </div>
                     </Box>
                 </TabPanel>
-                {/* {/* <TabPanel value={value} index={2}>
-                <CssBaseline />
-                    Item Three 
-                </TabPanel> */}
                 <TabPanel value={value} index={3}>
                     <CssBaseline />
                     <Grid container spacing={2}>
@@ -590,11 +693,30 @@ export default function HomeAdmin() {
                 </TabPanel>
                 <TabPanel value={value} index={4}>
                     <CssBaseline />
-                    <Box>
-                        <Typography variant="h5" sx={{ml:2}} gutterBottom>
-                            Pending Verifications:
-                        </Typography>
-                    </Box>
+
+                    <Typography variant="h5" sx={{ ml: 2 }} gutterBottom>
+                        Pending Verifications
+                    </Typography>
+
+                    <div style={{ height: 310, minWidth: 1200, display: "inherit" }}>
+                        <div style={{ display: "flex", height: "100%", }}>
+                            <div style={{ flexGrow: 1 }}>
+                                <DataGrid
+                                    rows={rows}
+                                    columns={columns}
+                                    pageSize={3}
+                                    rowsPerPageOptions={[3]}
+                                    components={{ Toolbar: GridToolbar }}
+                                    pagination
+
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    <Typography variant="h5" sx={{ ml: 2 }}>
+                        Doctors Online
+                    </Typography>
+
                 </TabPanel>
                 <TabPanel value={value} index={5}>
                     <CssBaseline />

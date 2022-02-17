@@ -51,7 +51,9 @@ import TextField from '@mui/material/TextField';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
 import Checkbox from '@mui/material/Checkbox';
-
+import { app, storage, database } from '../firebase-config';
+import { ref, child, get, push, update } from "firebase/database";
+import { getStorage, uploadBytes, ref as sref, getDownloadURL, getMetadata } from "firebase/storage";
 const StyledDataGrid = styled(DataGrid)(({ theme }) => ({
   border: 0,
   color:
@@ -161,9 +163,27 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
 );
 const mdTheme = createTheme();
 export default function PatientAppointments() {
-  const [date, setDate] = React.useState(new Date());
+  var d = new Date();
+  var min_time = new Date(0,0,0,d.getHours());
+  var max_time = new Date(0,0,0,17);
+  if(d.getHours()<10){
+    d.setHours(10, 0, 0, 0);
+    min_time.setHours(10, 0, 0, 0);
+  }
+  if(d.getHours()> 17){
+    d.setHours(10, 0, 0, 0);
+    d.setDate(d.getDate()+1);
+    min_time.setHours(10, 0, 0, 0);
+  }
+  console.log(d.toLocaleString('en-IN'))
+  const [doctorarray,setDoctorArray] = useState([]);
+  const [hospitalarray,setHospitalArray] = useState([]);
+  const [date, setDate] = React.useState(d);
   const [open, setOpen] = React.useState(true);
-  const [age, setAge] = React.useState('');
+  const [doctor, setDoctor] = React.useState('');
+  const [hospital, setHospital] = React.useState('');
+  const [tabledata, setTableData] = React.useState([]);
+  const [imgsrc, setImgSrc] = React.useState('https://i.imgur.com/Rbp9NSp.jpg');
   const columns = [
     {
       "field": "date",
@@ -186,85 +206,109 @@ export default function PatientAppointments() {
       "headerAlign": 'center',
   }
   ];
-  
-  const rows = [
-    {
-      "id": "bbe0dfce-2a8b-5d55-a28e-f73e566b0c61",
-      "date": "05/05/2021",
-      "doctorName": "Dr. John Doe",
-      "hospital": "M D Hospital"
-  },
-  {
-      "id": "bbe0dfce-2a8b-5d55-a28e-f73e566b0c62",
-      "date": "05/05/2021",
-      "doctorName": "Dr. John Doe",
-      "hospital": "M D Hospital"
-  },
-  {
-      "id": "bbe0dfce-2a8b-5d55-a28e-f73e566b0c63",
-      "date": "05/05/2021",
-      "doctorName": "Dr. John Doe",
-      "hospital": "M D Hospital"
-  },
-  {
-      "id": "bbe0dfce-2a8b-5d55-a28e-f73e566b0c64",
-      "date": "05/05/2021",
-      "doctorName": "Dr. John Doe",
-      "hospital": "M D Hospital"
-  },
-  {
-      "id": "bbe0dfce-2a8b-5d55-a28e-f73e566b0c65",
-      "date": "05/05/2021",
-      "doctorName": "Dr. John Doe",
-      "hospital": "M D Hospital"
-  }
-  ];
   const toggleDrawer = () => {
     setOpen(!open);
   };
-    const [value, setValue] = React.useState(0);
-    const [value1, setValue1] = React.useState(0);
-    const handleChange = (event) => {
-      setAge(event.target.value);
+    const handleDoctor = (event) => {
+      setDoctor(event.target.value);
     };
 
-    const handleChangeIndex = (index) => {
-        setValue(index);
+    const handleSubmit = (event) => {
+      event.preventDefault();
+      let uid = sessionStorage.getItem('UID');
+      console.log(date,doctor,hospital)
+      let doctorName;
+      let hospitalName;
+      for (const doctoruid in doctorarray){
+        if(doctorarray[doctoruid]['uid'] == doctor){
+          doctorName = doctorarray[doctoruid]['name']
+        }
+      }
+      for (const hospitaluid in hospitalarray){
+        if(hospitalarray[hospitaluid]['uid'] == hospital){
+          hospitalName = hospitalarray[hospitaluid]['name'];
+        }
+      }
+      let dbRef = ref(database);
+      const postData = {
+        date: date.toLocaleString('en-IN')
+        , doctorName: doctorName
+        , hospital: hospitalName
+      };
+      console.log(postData)
+      const updates = {};
+      updates['/appointments/' + uid + '/' + hospital+doctor] = postData;
+      update(dbRef, updates);
+      
+      var temp = {"id": hospital+doctor
+                  , "date": date.toLocaleString('en-IN')
+                  , "doctorName": doctorName
+                  , "hospital": hospitalName}
+      console.log(temp)
+      setTableData([...tabledata, temp]);
+      console.log(tabledata);
     };
-    const pages = ['Features', 'About Us', 'Contact'];
-    const settings = ['Profile', 'Account', 'Dashboard', 'Logout'];
-
-    const [anchorElNav, setAnchorElNav] = React.useState(null);
-    const [anchorElUser, setAnchorElUser] = React.useState(null);
-
-    const handleOpenNavMenu = (event) => {
-        setAnchorElNav(event.currentTarget);
+    const handleHospital = (event) => {
+      setHospital(event.target.value);
     };
-    const handleOpenUserMenu = (event) => {
-        setAnchorElUser(event.currentTarget);
-    };
-
-    const handleCloseNavMenu = () => {
-        setAnchorElNav(null);
-    };
-
-    const handleCloseUserMenu = () => {
-        setAnchorElUser(null);
-    };
-    const [selectedFile, setSelectedFile] = useState();
-    const [fileName, setFileName] = useState('');
-	const [isFilePicked, setIsFilePicked] = useState(false);
-    const changeHandler = (event) => {
-		setSelectedFile(event.target.files[0]);
-		setIsFilePicked(true);
-	};
-    const handleLogout = () => {
-        sessionStorage.removeItem('Auth Token');
-        navigate('/login')
-    }
     let navigate = useNavigate();
     useEffect(() => {
-        let authToken = sessionStorage.getItem('Auth Token')
+        let authToken = sessionStorage.getItem('Auth Token');
+        let uid = sessionStorage.getItem('UID');
+        let dbRef = ref(database);
+        get(child(dbRef, `doctors`)).then((snapshot) => {
+          let snapshot_val = snapshot.val();
+          console.log(snapshot_val)
+          var temparray = []
+          for (const [key, value] of Object.entries(snapshot_val)) {
+            var temp = {uid: key
+                          ,name: value.name}
+            temparray.push(temp)
+            
+            console.log(doctorarray);
+          }
+          console.log(temparray)
+          setDoctorArray(temparray);
+        })
+        get(child(dbRef, `hospitals`)).then((snapshot) => {
+          let snapshot_val = snapshot.val();
+          console.log(snapshot_val)
+          var temparray = []
+          for (const [key, value] of Object.entries(snapshot_val)) {
+            var temp = {uid: key
+                          ,name: value.name}
+            temparray.push(temp)
+            
+          }
+          console.log(temparray)
+          setHospitalArray(temparray);
+        })
+        get(child(dbRef, `appointments`)).then((snapshot) => {
+          let snapshot_val = snapshot.val()[uid];
+          console.log(snapshot_val)
+          var temparray = []
+          for (const [key, value] of Object.entries(snapshot_val)) {
+            var temp = {"id": key
+                  , "date": value.date
+                  , "doctorName": value.doctorName
+                  , "hospital": value.hospital}
+            console.log(temp)
+            temparray.push(temp)
+            
+            
+          }
+          setTableData(temparray);
+        }).catch((error) => {
+          console.log(error)
+        })
+        getDownloadURL(sref(storage, uid + '/profile_pic'))
+        .then((url) => {
+          setImgSrc(url);
+        })
+        .catch((error) => {
+          console.log(error);
+          console.log("Profile picture not available.")
+        });
         console.log(authToken)
         if (authToken) {
             navigate('/appointments-patient')
@@ -305,7 +349,7 @@ export default function PatientAppointments() {
             >
               Tele-Medicine
             </Typography>
-            <Avatar>N</Avatar>
+            <Avatar src = {imgsrc}></Avatar>
           </Toolbar>
         </AppBar>
         <Drawer variant="permanent" open={open}>
@@ -363,7 +407,7 @@ export default function PatientAppointments() {
                   components={{
                     Pagination: CustomPagination,
                   }}
-                  rows={rows} columns={columns}
+                  rows={tabledata} columns={columns}
                 />
                 {/* <DataGrid rows={rows} columns={columns} sx={{
                   boxShadow: 2,
@@ -390,20 +434,20 @@ export default function PatientAppointments() {
                   <Typography component="h1" variant="h5">
                     Book Appointment
                   </Typography>
-                  <Box component="form" Validate  sx={{ mt: 1 }}>
+                  <Box component="form" Validate onSubmit={handleSubmit} sx={{ mt: 1 }}>
                   <FormControl sx={{ m: 1, minWidth: 120 }}>
                     <InputLabel id="demo-simple-select-autowidth-label">Hospital</InputLabel>
                     <Select
                       labelId="demo-simple-select-autowidth-label"
                       id="demo-simple-select-autowidth"
-                      value={age}
-                      onChange={handleChange}
+                      value={hospital}
+                      onChange={handleHospital}
                       autoWidth
                       label="Hospital"
                     >
-                      <MenuItem value={10}>Rudra</MenuItem>
-                      <MenuItem value={21}>Fortes</MenuItem>
-                      <MenuItem value={22}>Medicitys</MenuItem>
+                      {hospitalarray.map((item) =>
+                        <MenuItem key={item.uid} value={item.uid}>{item.name}</MenuItem>
+                      )}
                     </Select>
                     </FormControl>
                     <FormControl sx={{ m: 2, minWidth: 120 }}>
@@ -411,14 +455,14 @@ export default function PatientAppointments() {
                     <Select
                       labelId="demo-simple-select-autowidth-label"
                       id="demo-simple-select-autowidth"
-                      value={age}
-                      onChange={handleChange}
+                      value={doctor}
+                      onChange={handleDoctor}
                       autoWidth
                       label="Doctor"
                     >
-                      <MenuItem value={10}>John Doe</MenuItem>
-                      <MenuItem value={21}>John</MenuItem>
-                      <MenuItem value={22}>Doe</MenuItem>
+                      {doctorarray.map((item) =>
+                        <MenuItem key={item.uid} value={item.uid}>{item.name}</MenuItem>
+                      )}
                     </Select>
                   </FormControl>
                   </Box>
@@ -430,9 +474,9 @@ export default function PatientAppointments() {
                       onChange={(newValue) => {
                         setDate(newValue);
                       }}
-                      minDate = {new Date()}
-                      minTime={new Date(0,0,0,10)}
-                      maxTime={new Date(0, 0, 0, 17)}
+                      minDate = {d}
+                      minTime={min_time}
+                      maxTime={max_time}
                     />
                   </LocalizationProvider>
                   <Button
@@ -440,6 +484,7 @@ export default function PatientAppointments() {
                   fullWidth
                   variant="contained"
                   sx={{ mt: 3, mb: 2 }}
+                  onClick = {handleSubmit}
                 >
                 Book Appointment
                 </Button>

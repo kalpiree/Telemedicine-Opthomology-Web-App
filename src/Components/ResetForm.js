@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { useState,useEffect   } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -37,7 +36,6 @@ function Copyright(props) {
   
 export default function ResetForm() {
     const [email, setEmail] = useState('');
-    const navigate = useNavigate();
     async function handleReset(event){
         event.preventDefault();
         const data = new FormData(event.currentTarget);
@@ -57,8 +55,6 @@ export default function ResetForm() {
                 toast.error('Unregistered User. Please check the Email',{autoClose: 2000});
               }
             });
-        
-        navigate('/login')
       };
     
       return (

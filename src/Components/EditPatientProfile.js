@@ -113,11 +113,11 @@ export default function EditPatientProfile() {
   const [country, setCountry] = React.useState('');
   const [imgsrc, setImgSrc] = React.useState('https://i.imgur.com/Rbp9NSp.jpg');
   const [selectedProfilePic, setSelectedProfilePic] = useState();
-	const [isProfilePicPicked, setIsProfilePicPicked] = useState(false);
+	const [isProfilePicPicked, setIsProfilePicPicked] = useState('Finish');
   const changeProfilePic = (event) => {
     console.log("Entered profilepic")
 		setSelectedProfilePic(event.target.files[0]);
-    setIsProfilePicPicked(true);
+    setIsProfilePicPicked('Ready');
   };
   const handleChangeFirstName = (event) => {
     setFirstName(event.target.value);
@@ -174,12 +174,13 @@ export default function EditPatientProfile() {
       toast.success('Your profile data is updated.',{autoClose: 2000});
   }
 
-  const handleProfilePic = (file) => {
+  const handleProfilePic = (e) => {
     if(isProfilePicPicked){
-      console.log(file)
+      console.log(selectedProfilePic)
       let uid = sessionStorage.getItem('UID');
       const storageRef = sref(storage, uid + '/profile_pic');
-      uploadBytes(storageRef, file).then((snapshot) => {
+      uploadBytes(storageRef, selectedProfilePic).then((snapshot) => {
+        console.log(snapshot)
           console.log('Uploaded profile pic!');
       });
     }
@@ -245,11 +246,26 @@ export default function EditPatientProfile() {
           setCountry(snapshot_val[uid]['country']);
         }
       });
+      if(isProfilePicPicked == 'Ready'){
+        console.log(selectedProfilePic)
+        let uid = sessionStorage.getItem('UID');
+        const storageRef = sref(storage, uid + '/profile_pic');
+        uploadBytes(storageRef, selectedProfilePic).then((snapshot) => {
+          console.log(snapshot)
+            console.log('Uploaded profile pic!');
+            setIsProfilePicPicked('Finish');
+            toast.success('Your profile data is updated.',{autoClose: 2000});
+        });
+        getDownloadURL(sref(storage, uid + '/profile_pic'))
+      .then((url) => {
+        setImgSrc(url);
+      });
+      }
       getDownloadURL(sref(storage, uid + '/profile_pic'))
       .then((url) => {
         setImgSrc(url);
       });
-  }, [])
+  }, [isProfilePicPicked])
   return (
     <ThemeProvider theme={theme}>
     <Box sx={{ display: 'flex' }}>
@@ -443,7 +459,6 @@ export default function EditPatientProfile() {
                         fullWidth
                         variant="contained"
                         sx={{ mt: 3, mb: 2 }}
-                        onClick = {handleProfilePic(selectedProfilePic)}
                       >
                       Change Profile picture
                       </Button>
