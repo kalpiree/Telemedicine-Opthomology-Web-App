@@ -9,46 +9,42 @@ import VideoCallIcon from '@material-ui/icons/VideoCall';
 import LocalHospitalIcon from '@material-ui/icons/LocalHospital';
 import LogoutIcon from '@mui/icons-material/Logout';
 import EditIcon from '@mui/icons-material/Edit';
-import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
+import PersonIcon from "@mui/icons-material/Person";
+import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
+import AddCircleIcon from "@mui/icons-material/AddCircle";
+import SupervisorAccountIcon from "@mui/icons-material/SupervisorAccount";
+
 export const mainListItems = (
   <div>
-    <ListItemButton component="a" href="/homepatient">
+    <ListItemButton component="a" href="/homeadmin">
       <ListItemIcon>
         <DashboardIcon />
       </ListItemIcon>
       <ListItemText primary="Dashboard" />
     </ListItemButton>
-    
-    <ListItemButton component="a" href="/doctors">
+    <ListItemButton component="a" href="/edit-admin-profile">
       <ListItemIcon>
-        <LocalHospitalIcon />
+        <PersonIcon />
       </ListItemIcon>
-      <ListItemText primary="Doctors" />
-    </ListItemButton>
-
-    <ListItemButton component="a" href="/appointments-patient">
-      <ListItemIcon>
-        <VideoCallIcon />
-      </ListItemIcon>
-      <ListItemText primary="Appointments" />
-    </ListItemButton>
-
-    <ListItemButton component="a" href="/eye-ml">
-      <ListItemIcon>
-        <RemoveRedEyeIcon />
-      </ListItemIcon>
-      <ListItemText primary="Submit Eye Report" />
+      <ListItemText primary="Profile" />
     </ListItemButton>
   </div>
 );
 
 export const secondaryListItems = (
   <div>
-      <ListItemButton component="a" href="/edit-patient-profile">
+      
+      <ListItemButton component="a" href="/look-doctors">
       <ListItemIcon>
-        <EditIcon />
+        <AddCircleIcon />
       </ListItemIcon>
-      <ListItemText primary="Edit Profile" />
+      <ListItemText primary="Doctors" />
+    </ListItemButton>
+    <ListItemButton component="a" href="/">
+      <ListItemIcon>
+        <SupervisorAccountIcon />
+      </ListItemIcon>
+      <ListItemText primary="Patients" />
     </ListItemButton>
     <ListItemButton component="a" href="/">
       <ListItemIcon>

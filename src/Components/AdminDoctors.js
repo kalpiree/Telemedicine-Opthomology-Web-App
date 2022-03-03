@@ -7,6 +7,8 @@ import Divider from "@mui/material/Divider";
 import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
 import Button from "@mui/material/Button";
 import MuiDrawer from '@mui/material/Drawer';
+import Container from '@mui/material/Container';
+import Paper from '@mui/material/Paper';
 import Avatar from "@mui/material/Avatar";
 import PersonIcon from "@mui/icons-material/Person";
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
@@ -14,6 +16,7 @@ import DashboardIcon from "@mui/icons-material/Dashboard";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import SupervisorAccountIcon from "@mui/icons-material/SupervisorAccount";
 import PropTypes from "prop-types";
+import TableContainer from '@mui/material/TableContainer';
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 import { useState, useEffect } from 'react';
@@ -27,7 +30,13 @@ import TextField from '@mui/material/TextField';
 import Grid from '@mui/material/Grid';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
-
+import {
+    DataGrid,
+    gridPageCountSelector,
+    gridPageSelector,
+    useGridApiContext,
+    useGridSelector,
+  } from '@mui/x-data-grid';
 import DateAdapter from '@mui/lab/AdapterDateFns';
 import AdapterDateFns from '@mui/lab/AdapterDateFns';
 import LocalizationProvider from '@mui/lab/LocalizationProvider';
@@ -49,29 +58,92 @@ import { ref, child, get, push, update } from "firebase/database";
 import { getStorage, uploadBytes, ref as sref, getDownloadURL } from "firebase/storage";
 import { SettingsApplicationsTwoTone } from '@material-ui/icons';
 import { ToastContainer, toast } from 'react-toastify';
-
-import { DataGrid, GridToolbar } from "@mui/x-data-grid";
+import Pagination from '@mui/material/Pagination';
+import PaginationItem from '@mui/material/PaginationItem';
 import { Link } from "@material-ui/core";
 //import 'react-toastify/dist/ReactToastify.css';
 import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
 import theme from './theme';
 
 import ToggleButton from '@mui/material/ToggleButton';
+import { VideoStableOutlined } from "@mui/icons-material";
+
+function Copyright(props) {
+    return (
+      <Typography variant="body2" color="text.secondary" align="center" {...props}>
+        {'Copyright © '}
+        Tech-Medicine.
+        {new Date().getFullYear()}
+        {'.'}
+      </Typography>
+    );
+  }
+
+const StyledDataGrid = styled(DataGrid)(({ theme }) => ({
+    border: 0,
+    color:
+      theme.palette.mode === 'light' ? 'rgba(0,0,0,.85)' : 'rgba(255,255,255,0.85)',
+    fontFamily: [
+      '-apple-system',
+      'BlinkMacSystemFont',
+      '"Segoe UI"',
+      'Roboto',
+      '"Helvetica Neue"',
+      'Arial',
+      'sans-serif',
+      '"Apple Color Emoji"',
+      '"Segoe UI Emoji"',
+      '"Segoe UI Symbol"',
+    ].join(','),
+    WebkitFontSmoothing: 'auto',
+    letterSpacing: 'normal',
+    '& .MuiDataGrid-columnsContainer': {
+      backgroundColor: theme.palette.mode === 'light' ? '#fafafa' : '#1d1d1d',
+    },
+    '& .MuiDataGrid-iconSeparator': {
+      display: 'none',
+    },
+    '& .MuiDataGrid-columnHeader, .MuiDataGrid-cell': {
+      borderRight: `1px solid ${
+        theme.palette.mode === 'light' ? '#f0f0f0' : '#303030'
+      }`,
+    },
+    '& .MuiDataGrid-columnsContainer, .MuiDataGrid-cell': {
+      borderBottom: `1px solid ${
+        theme.palette.mode === 'light' ? '#f0f0f0' : '#303030'
+      }`,
+    },
+    '& .MuiDataGrid-cell': {
+      align: 'center',
+      color:
+        theme.palette.mode === 'light' ? 'rgba(0,0,0,.85)' : 'rgba(255,255,255,0.65)',
+    },
+    '& .MuiPaginationItem-root': {
+      borderRadius: 0,
+    },
+  }));
+  
+  function CustomPagination() {
+    const apiRef = useGridApiContext();
+    const page = useGridSelector(apiRef, gridPageSelector);
+    const pageCount = useGridSelector(apiRef, gridPageCountSelector);
+  
+    return (
+      <Pagination
+        color="primary"
+        variant="outlined"
+        shape="rounded"
+        page={page + 1}
+        count={pageCount}
+        // @ts-expect-error
+        renderItem={(props2) => <PaginationItem {...props2} disableRipple />}
+        onChange={(event, value) => apiRef.current.setPage(value - 1)}
+      />
+    );
+  }
 
 
 
-
-const rows = [
-    { id: 1, lastName: "Snow", firstName: "Jon", age: 35, location: "Chennai" },
-    { id: 2, lastName: "Lannister", firstName: "Cersei", age: 42, location: "Bangalore" },
-    { id: 3, lastName: "Lannister", firstName: "Jaime", age: 45, location: "kolkata" },
-    { id: 4, lastName: "Stark", firstName: "Arya", age: 16, location: "Hyderabad" },
-    { id: 5, lastName: "Targaryen", firstName: "Daenerys", age: null, location: "Delhi" },
-    { id: 6, lastName: null, firstName: "Melisandre", age: 15, location: "Lucknow" },
-    { id: 7, lastName: "Clifford", firstName: "Ferrara", age: 44, location: "Patna" },
-    { id: 8, lastName: "Frances", firstName: "Rossini", age: 36, location: "Bihar" },
-    { id: 9, lastName: "Roxie", firstName: "Harvey", age: 65, location: "Mumbai" }
-];
 const drawerWidth = 240;
 
 const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' })(
@@ -99,16 +171,7 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
       },
     }),
   );
-  function Copyright(props) {
-    return (
-      <Typography variant="body2" color="text.secondary" align="center" {...props}>
-        {'Copyright © '}
-        Tech-Medicine.
-        {new Date().getFullYear()}
-        {'.'}
-      </Typography>
-    );
-  }
+
 
 function TabPanel(props) {
     const { children, value, index, ...other } = props;
@@ -144,7 +207,7 @@ function a11yProps(index) {
     };
 }
 
-export default function HomeAdmin() {
+export default function AdminDoctors() {
     const [value, setValue] = React.useState(3);
 
     const handleChanges = (event, newValue) => {
@@ -154,7 +217,8 @@ export default function HomeAdmin() {
     const toggleDrawer = () => {
         setOpen(!open);
       };
-
+    const [tabledata, setTableData] = React.useState([]);
+    const [hospdata, setHospData] = React.useState([]);
     const [selectedFile, setSelectedFile] = useState();
     const [fileName, setFileName] = useState('');
     const [isFilePicked, setIsFilePicked] = useState(false);
@@ -283,61 +347,37 @@ export default function HomeAdmin() {
         }
     };
     const columns = [
-        { field: "id", headerName: "ID" },
         {
-            field: "fullName",
-            headerName: "Full name",
-            width: 300,
+            field: "name",
+            headerName: "Name",
+            width: 200,
             sortable: false,
-            valueGetter: (params) =>
-                `${params.row.firstName || ""} ${params.row.lastName || ""}`
+            "headerAlign": 'center',
         },
-        { field: "age", headerName: "Age", type: "number", width: 100 },
+        { field: "age", headerName: "Age", type: "number", width: 100, "headerAlign": 'center' },
         {
             field: "email",
             headerName: "Email",
-            width: 300,
-            valueGetter: (params) =>
-                `${params.row.firstName || ""}${params.row.lastName || ""}@gmail.com`
+            width: 200,
+            "headerAlign": 'center'
         },
         {
-            field: "location",
-            headerName: "Location",
-        },
-        {
-            field: "profile",
-            headerName: "Profile Details",
-            width: 125,
-            renderCell: (cellValues) => {
-                return (
-                    <Link href={`about:blank`} target="_blank">
-                        Profile
-                    </Link>
-                );
-            }
-        },
-        {
-            field: "verification",
-            headerName: "Verification Status",
-            width: "30%",
-            renderCell: (cellValues) => {
-                return (
-                    <ToggleButton
-                        value="check"
-                        selected={selected}
-                        color="success"
-                        onChange={() => {
-                            setSelected(!selected);
-                        }}
-                    >
-                        {String(selected)}
-                    </ToggleButton>
-                );
-            }
+            field: "hospital",
+            headerName: "Hospital",
+            "headerAlign": 'center',
+            width: 200,
         }
     ];
 
-
+    const hospColumns = [
+        {
+            field: "name",
+            headerName: "Name",
+            width: 180,
+            sortable: false,
+            "headerAlign": 'center',
+        }
+    ];
     let navigate = useNavigate();
     useEffect(() => {
         let authToken = sessionStorage.getItem('Auth Token')
@@ -345,53 +385,50 @@ export default function HomeAdmin() {
         console.log(uid)
         console.log(authToken)
         if (authToken) {
-            navigate('/homeadmin')
+            navigate('/look-doctors')
         }
 
         if (!authToken) {
             navigate('/register')
         }
         let dbRef = ref(database);
-        get(child(dbRef, `users`)).then((snapshot) => {
+        console.log(dbRef)
+        get(child(dbRef, `doctors`)).then((snapshot) => {
             let snapshot_val = snapshot.val();
-            let uid = sessionStorage.getItem('UID')
-            if ('name' in snapshot_val[uid]) {
-                let name = snapshot_val[uid]['name'];
-                setFirstName(name.split(" ")[0]);
-                setLastName(name.split(" ")[1]);
+            console.log(snapshot_val)
+            var temparray = []
+            for (const [key, value] of Object.entries(snapshot_val)) {
+              var temp = {"id": key
+                    , "name": value.name
+                    , "hospital": value.hospital
+                , "age": value.age
+                , "email": value.email}
+              console.log(temp)
+              temparray.push(temp)
+              
+              
             }
-            if ('gender' in snapshot_val[uid]) {
-                setGender(snapshot_val[uid]['gender']);
+            setTableData(temparray);
+          }).catch((error) => {
+            console.log(error)
+          })
+
+          get(child(dbRef, `hospitals`)).then((snapshot) => {
+            let snapshot_val = snapshot.val();
+            console.log(snapshot_val)
+            var temparray = []
+            for (const [key, value] of Object.entries(snapshot_val)) {
+              var temp = {"id": key
+                    , "name": value.name}
+              console.log(temp)
+              temparray.push(temp)
+              
+              
             }
-            if ('mob' in snapshot_val[uid]) {
-                setMob(snapshot_val[uid]['mob']);
-            }
-            if ('bloodgroup' in snapshot_val[uid]) {
-                setBloodGroup(snapshot_val[uid]['bloodgroup']);
-            }
-            if ('dob' in snapshot_val[uid]) {
-                setDate(snapshot_val[uid]['dob']);
-            }
-            if ('address1' in snapshot_val[uid]) {
-                setAddress1(snapshot_val[uid]['address1']);
-            }
-            if ('address2' in snapshot_val[uid]) {
-                setAddress2(snapshot_val[uid]['address2']);
-            }
-            if ('city' in snapshot_val[uid]) {
-                setCity(snapshot_val[uid]['city']);
-            }
-            if ('state' in snapshot_val[uid]) {
-                setState(snapshot_val[uid]['state']);
-            }
-            if ('country' in snapshot_val[uid]) {
-                setCountry(snapshot_val[uid]['country']);
-            }
-        });
-        getDownloadURL(sref(storage, uid + '/profile_pic'))
-            .then((url) => {
-                setImgSrc(url);
-            });
+            setHospData(temparray);
+          }).catch((error) => {
+            console.log(error)
+          })
     }, [])
     return (
         <ThemeProvider theme={theme}>
@@ -467,62 +504,60 @@ export default function HomeAdmin() {
           }}
         >
                 <Toolbar />
-                    <CssBaseline />
-                    <Grid container spacing={2}>
-                        <Grid item xs={6}>
-                            <Card sx={{ minHeight: 200, minWidth: 200, bgcolor: '#009688', m: 2, p: 2 }}>
-                                <CardContent>
-                                    <Typography variant="h4" component="div" color='#FFF'>
-                                        Total No. Of Doctors Online:
-                                    </Typography>
-                                    <br />
-                                    <Typography variant="h3" color='#FFF'>
-                                        28/50
-                                    </Typography>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-                        <Grid item xs={6}>
-                            <Card sx={{ minHeight: 200, minWidth: 200, bgcolor: '#ffc107', m: 2, p: 2 }}>
-                                <CardContent>
-                                    <Typography variant="h4" component="div" color='#FFF'>
-                                        Total No. Of Patients Visited:
-                                    </Typography>
-                                    <br />
-                                    <Typography variant="h3" color='#FFF'>
-                                        50
-                                    </Typography>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-                        <Grid item xs={6}>
-                            <Card sx={{ minHeight: 200, minWidth: 200, bgcolor: '#e53935', m: 2, p: 2 }}>
-                                <CardContent>
-                                    <Typography variant="h4" component="div" color='#FFF'>
-                                        Pending Verification Of Doctors:
-                                    </Typography>
-                                    <br />
-                                    <Typography variant="h3" color='#FFF'>
-                                        5
-                                    </Typography>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-                        <Grid item xs={6}>
-                            <Card sx={{ minHeight: 200, minWidth: 200, bgcolor: 'primary.main', m: 2, p: 2 }}>
-                                <CardContent>
-                                    <Typography variant="h4" component="div" color='#FFF'>
-                                        Pending Appointments:
-                                    </Typography>
-                                    <br />
-                                    <Typography variant="h3" color='#FFF'>
-                                        12
-                                    </Typography>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-                    </Grid>
-                    <Copyright sx={{ pt: 4 }} />
+                <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+                <Grid container spacing={3}>
+              <Grid item xs={12} md={8} lg={9}>
+                <Paper
+                  sx={{
+                    p: 2,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    height: "100%",
+                  }}
+                >
+                  <Typography variant="h5" color="text.secondary">
+                Registered Doctors
+                </Typography>
+                <div style={{ flexGrow: 1 }}>
+                <StyledDataGrid
+                  pageSize={5}
+                  rowsPerPageOptions={[5]}
+                  components={{
+                    Pagination: CustomPagination,
+                  }}
+                  rows={tabledata} columns={columns}
+                />
+                </div>
+                </Paper>
+                </Grid>
+              <Grid item xs={12} md={4} lg={3}>
+              <Paper
+                  sx={{
+                    p: 2,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    height: 480,
+                  }}
+                >
+                    <Typography variant="h5" color="text.secondary">
+                Registered Hospitals
+                </Typography>
+                <div style={{ flexGrow: 1 }}>
+                <StyledDataGrid
+                  pageSize={5}
+                  rowsPerPageOptions={[5]}
+                  components={{
+                    Pagination: CustomPagination,
+                  }}
+                  rows={hospdata} columns={hospColumns}
+                />
+                </div>
+                </Paper>
+              </Grid>
+              </Grid>
+                
+                <Copyright sx={{ pt: 4 }} />
+                </Container>
             </Box>
         </Box >
         </ThemeProvider>

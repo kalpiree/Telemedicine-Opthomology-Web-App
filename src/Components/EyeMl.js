@@ -29,7 +29,6 @@ import CardMedia from '@mui/material/CardMedia';
 import Button from '@mui/material/Button';
 import Avatar from '@mui/material/Avatar';
 import blood_test from '../images/blood-test.png'
-import eye from '../images/left_eye.png'
 import health_report from '../images/health-report.png';
 import { keyframes } from '@mui/system';
 import theme from './theme';
@@ -55,6 +54,10 @@ import Checkbox from '@mui/material/Checkbox';
 import { app, storage, database } from '../firebase-config';
 import { ref, child, get, push, update } from "firebase/database";
 import { getStorage, uploadBytes, ref as sref, getDownloadURL, getMetadata } from "firebase/storage";
+const Input = styled('input')({
+    display: 'none',
+  });
+  
 const StyledDataGrid = styled(DataGrid)(({ theme }) => ({
   border: 0,
   color:
@@ -163,8 +166,16 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
   }),
 );
 const mdTheme = createTheme();
-export default function PatientAppointments() {
+export default function EyeMl() {
   var d = new Date();
+  const [selectedBloodReport, setSelectedBloodReport] = useState();
+	const [isBloodReportPicked, setIsBloodReportPicked] = useState('Finish');
+  const changeBloodReport = (event) => {
+    console.log(event.target.files[0].name)
+	setSelectedBloodReport(event.target.files[0]);
+    setIsBloodReportPicked('Ready');
+    
+  };
   var min_time = new Date(0,0,0,d.getHours());
   var max_time = new Date(0,0,0,17);
   if(d.getHours()<10){
@@ -177,9 +188,12 @@ export default function PatientAppointments() {
     min_time.setHours(10, 0, 0, 0);
   }
   console.log(d.toLocaleString('en-IN'))
+  const [eye,setEye] = React.useState('https://images.pexels.com/photos/801867/pexels-photo-801867.jpeg');
   const [doctorarray,setDoctorArray] = useState([]);
   const [hospitalarray,setHospitalArray] = useState([]);
   const [date, setDate] = React.useState(d);
+  const [disease, setDisease] = React.useState("");
+  const [percentage, setPercentage] = React.useState("");
   const [open, setOpen] = React.useState(true);
   const [doctor, setDoctor] = React.useState('');
   const [hospital, setHospital] = React.useState('');
@@ -255,70 +269,38 @@ export default function PatientAppointments() {
     let navigate = useNavigate();
     useEffect(() => {
         let authToken = sessionStorage.getItem('Auth Token');
-        let uid = sessionStorage.getItem('UID');
-        let dbRef = ref(database);
-        get(child(dbRef, `doctors`)).then((snapshot) => {
-          let snapshot_val = snapshot.val();
-          console.log(snapshot_val)
-          var temparray = []
-          for (const [key, value] of Object.entries(snapshot_val)) {
-            var temp = {uid: key
-                          ,name: value.name}
-            temparray.push(temp)
-            
-            console.log(doctorarray);
-          }
-          console.log(temparray)
-          setDoctorArray(temparray);
-        })
-        get(child(dbRef, `hospitals`)).then((snapshot) => {
-          let snapshot_val = snapshot.val();
-          console.log(snapshot_val)
-          var temparray = []
-          for (const [key, value] of Object.entries(snapshot_val)) {
-            var temp = {uid: key
-                          ,name: value.name}
-            temparray.push(temp)
-            
-          }
-          console.log(temparray)
-          setHospitalArray(temparray);
-        })
-        get(child(dbRef, `appointments`)).then((snapshot) => {
-          let snapshot_val = snapshot.val()[uid];
-          console.log(snapshot_val)
-          var temparray = []
-          for (const [key, value] of Object.entries(snapshot_val)) {
-            var temp = {"id": key
-                  , "date": value.date
-                  , "doctorName": value.doctorName
-                  , "hospital": value.hospital}
-            console.log(temp)
-            temparray.push(temp)
-            
-            
-          }
-          setTableData(temparray);
-        }).catch((error) => {
-          console.log(error)
-        })
-        getDownloadURL(sref(storage, uid + '/profile_pic'))
-        .then((url) => {
-          setImgSrc(url);
-        })
-        .catch((error) => {
-          console.log(error);
-          console.log("Profile picture not available.")
-        });
+        
+        if(isBloodReportPicked == 'Ready'){
+            console.log(selectedBloodReport)
+            console.log(selectedBloodReport.name);
+            setIsBloodReportPicked('Finish');
+            var reader = new FileReader();
+            reader.readAsDataURL(selectedBloodReport);
+            reader.onloadend = () => {
+                setEye(URL.createObjectURL(selectedBloodReport))
+                console.log(URL.createObjectURL(selectedBloodReport));
+                var xhr = new XMLHttpRequest()
+                xhr.addEventListener('load', () => {
+                    console.log(xhr.responseText)
+                    setPercentage(JSON.parse(xhr.responseText)['probability'])
+                    setDisease(JSON.parse(xhr.responseText)['result'])
+                 })
+                xhr.open('POST', 'http://127.0.0.1:5000/predict')
+                xhr.setRequestHeader("Content-Type", "application/json");
+                xhr.send(JSON.stringify(reader.result))
+            };
+          
+        
+    }
         console.log(authToken)
         if (authToken) {
-            navigate('/appointments-patient')
+            navigate('/eye-ml')
         }
 
         if (!authToken) {
             navigate('/register')
         }
-    }, [])
+    }, [isBloodReportPicked])
     return (
       <ThemeProvider theme={theme}>
       <Box sx={{ display: 'flex' }}>
@@ -395,7 +377,7 @@ export default function PatientAppointments() {
         <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
             <Grid container spacing={3}>
               {/* Chart */}
-              <Grid item xs={12} md={8} lg={9}>
+              <Grid item xs={12}>
                 <Paper
                   sx={{
                     p: 2,
@@ -404,101 +386,41 @@ export default function PatientAppointments() {
                     height: "100%",
                   }}
                 >
-                  <Typography variant="h5" color="text.secondary">
-                Booked Appointments
+                 <Card sx={{ maxWidth: 275  }}>
+                      <div>
+                      <CardMedia
+                          component="img"
+                          alt="blood_test"
+                          height="10%"
+                          image={eye}
+                      />
+                      </div>
+                      <CardContent>
+                      <Typography gutterBottom variant="h5" component="div">
+                          Upload Eye Sample
+                          </Typography>
+                      </CardContent>
+                      <CardActions sx={{ justifyContent: "center" }}>
+                      <label htmlFor="contained-button-file-1">
+                        <Input accept="image/*|*.pdf" id="contained-button-file-1" multiple type="file" onChange={changeBloodReport} />
+                        <Button size = "small" component="span" type="button" >
+                          Upload
+                        </Button>
+                      </label>
+                      </CardActions>
+                    </Card>
+                <Typography gutterBottom variant="h4" component="div">
+                {disease}
                 </Typography>
-                <div style={{ flexGrow: 1 }}>
-                <StyledDataGrid
-                  pageSize={5}
-                  rowsPerPageOptions={[5]}
-                  components={{
-                    Pagination: CustomPagination,
-                  }}
-                  rows={tabledata} columns={columns}
-                />
-                </div>
+                <Typography gutterBottom variant="h5" component="div">
+                {percentage}
+                </Typography>
                 </Paper>
+                
 
               </Grid>
 
-              <Grid item xs={12} md={4} lg={3}>
-                <Paper
-                  sx={{
-                    p: 4,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    height: 480,
-                  }}
-                >
-                  <Typography component="h1" variant="h5">
-                    Book Appointment
-                  </Typography>
-                  <Box component="form" Validate onSubmit={handleSubmit} sx={{ mt: 1 }}>
-                  <FormControl sx={{ m: 1, minWidth: 120 }}>
-                    <InputLabel id="demo-simple-select-autowidth-label">Hospital</InputLabel>
-                    <Select
-                      labelId="demo-simple-select-autowidth-label"
-                      id="demo-simple-select-autowidth"
-                      value={hospital}
-                      onChange={handleHospital}
-                      autoWidth
-                      label="Hospital"
-                    >
-                      {hospitalarray.map((item) =>
-                        <MenuItem key={item.uid} value={item.uid}>{item.name}</MenuItem>
-                      )}
-                    </Select>
-                    </FormControl>
-                    <FormControl sx={{ m: 2, minWidth: 120 }}>
-                    <InputLabel id="demo-simple-select-autowidth-label">Doctor</InputLabel>
-                    <Select
-                      labelId="demo-simple-select-autowidth-label"
-                      id="demo-simple-select-autowidth"
-                      value={doctor}
-                      onChange={handleDoctor}
-                      autoWidth
-                      label="Doctor"
-                    >
-                      {doctorarray.map((item) =>
-                        <MenuItem key={item.uid} value={item.uid}>{item.name}</MenuItem>
-                      )}
-                    </Select>
-                  </FormControl>
-                  </Box>
-                  <LocalizationProvider dateAdapter={AdapterDateFns}>
-                    <DateTimePicker
-                      renderInput={(props) => <TextField {...props} />}
-                      label="Appointment Time"
-                      value={date}
-                      onChange={(newValue) => {
-                        setDate(newValue);
-                      }}
-                      minDate = {d}
-                      minTime={min_time}
-                      maxTime={max_time}
-                    />
-                  </LocalizationProvider>
-                  <Button
-                  type="submit"
-                  fullWidth
-                  variant="contained"
-                  sx={{ mt: 3, mb: 2 }}
-                  onClick = {handleSubmit}
-                >
-                Book Appointment
-                </Button>
-              </Paper>
-              </Grid>
               
-              <Grid item xs={12}>
-                <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', borderColor: 'grey.500'}}>
-                <Typography variant="body1" color="text.secondary">
-                Appointments are available from 10 AM to 5 PM only.
-                </Typography>
-                  
-
-                </Paper>
-              </Grid>
             </Grid>
             <Copyright sx={{ pt: 4 }} />
             <Grid item>

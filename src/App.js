@@ -10,6 +10,9 @@ import Home from './Components/Home';
 import PatientAppointments from './Components/PatientAppointments'
 import Doctors from './Components/Doctors';
 import EditPatientProfile from './Components/EditPatientProfile';
+import EditAdminProfile from './Components/EditAdminProfile';
+import AdminDoctors from './Components/AdminDoctors';
+import EyeMl from './Components/EyeMl';
 import {
   Routes,
   Route,
@@ -197,6 +200,24 @@ function App() {
             path='/reset-password'
             element={
               <ResetForm />}
+          />
+
+          <Route
+            path='/edit-admin-profile'
+            element={
+              <EditAdminProfile />}
+          />
+
+          <Route
+            path='/look-doctors'
+            element={
+              <AdminDoctors />}
+          />
+
+          <Route
+            path='/eye-ml'
+            element={
+              <EyeMl />}
           />
 
         </Routes>

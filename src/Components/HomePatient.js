@@ -10,6 +10,7 @@ import Typography from '@mui/material/Typography';
 import MenuIcon from '@material-ui/icons/Menu';
 import { useTheme } from '@mui/material/styles';
 import MuiDrawer from '@mui/material/Drawer';
+import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
 import AccountCircleIcon from '@material-ui/icons/AccountCircle';
 import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
 import Divider from '@mui/material/Divider';
@@ -101,6 +102,7 @@ export default function HomePatient() {
   const [selectedBloodReport, setSelectedBloodReport] = useState();
 	const [isBloodReportPicked, setIsBloodReportPicked] = useState('Finish');
   const changeBloodReport = (event) => {
+    console.log(event.target.files[0])
 			setSelectedBloodReport(event.target.files[0]);
     	setIsBloodReportPicked('Ready');	
   };
@@ -363,8 +365,9 @@ export default function HomePatient() {
                 ...(open && { display: 'none' }),
               }}
             >
-              <MenuIcon />
+              
             </IconButton>
+            
             <Typography
               component="h1"
               variant="h6"
@@ -374,7 +377,13 @@ export default function HomePatient() {
             >
               Tele-Medicine
             </Typography>
-            <Avatar src = {imgsrc}></Avatar>
+            <RemoveRedEyeIcon
+                        sx={{ border: 3, width: 40, height: 30, borderRadius: 2 }}
+                    />
+                        -
+                    <RemoveRedEyeIcon
+                        sx={{ border: 3, width: 40, height: 30, borderRadius: 2 }}
+                    />
           </Toolbar>
         </AppBar>
         <Drawer variant="permanent" open={open}>

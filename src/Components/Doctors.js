@@ -8,6 +8,7 @@ import Toolbar from '@mui/material/Toolbar';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import MenuIcon from '@material-ui/icons/Menu';
+import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
 import { useTheme } from '@mui/material/styles';
 import MuiDrawer from '@mui/material/Drawer';
 import AccountCircleIcon from '@material-ui/icons/AccountCircle';
@@ -219,7 +220,13 @@ export default function Doctors() {
             >
               Tele-Medicine
             </Typography>
-            <Avatar src = {imgsrc}></Avatar>
+            <RemoveRedEyeIcon
+                        sx={{ border: 3, width: 40, height: 30, borderRadius: 2 }}
+                    />
+                        -
+                    <RemoveRedEyeIcon
+                        sx={{ border: 3, width: 40, height: 30, borderRadius: 2 }}
+                    />
           </Toolbar>
         </AppBar>
         <Drawer variant="permanent" open={open}>

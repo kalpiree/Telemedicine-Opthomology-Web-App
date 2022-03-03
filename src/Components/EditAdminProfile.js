@@ -9,15 +9,15 @@ import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import InputLabel from '@mui/material/InputLabel';
 import FormControl from '@mui/material/FormControl';
+import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
 import MenuIcon from '@material-ui/icons/Menu';
 import { useTheme } from '@mui/material/styles';
-import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
 import MuiDrawer from '@mui/material/Drawer';
 import AccountCircleIcon from '@material-ui/icons/AccountCircle';
 import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
 import Divider from '@mui/material/Divider';
 import List from '@mui/material/List';
-import { mainListItems, secondaryListItems } from './listItems';
+import { mainListItems, secondaryListItems } from './adminListItems';
 import TextField from '@mui/material/TextField';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
@@ -99,7 +99,7 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
   }),
 );
 const mdTheme = createTheme();
-export default function EditPatientProfile() {
+export default function EditAdminProfile() {
   const [date, setDate] = React.useState(new Date());
   const [bloodGroup, setBloodGroup] = React.useState('');
   const [gender, setGender] = React.useState('');
@@ -204,7 +204,7 @@ export default function EditPatientProfile() {
       console.log(uid)
       console.log(authToken)
       if (authToken) {
-          navigate('/edit-patient-profile')
+          navigate('/edit-admin-profile')
       }
 
       if (!authToken) {
