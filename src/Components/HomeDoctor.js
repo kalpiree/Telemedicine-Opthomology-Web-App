@@ -1,36 +1,42 @@
-import React, { useState, useEffect } from 'react';
-import { getAuth, signOut } from "firebase/auth";
-import { initializeApp } from "firebase/app";
-import { useNavigate } from 'react-router-dom';
-import { getFirestore } from "firebase/firestore";
-import { getStorage, uploadBytes, collection, getDocs, ref as sref } from "firebase/storage";
-import TextField from '@mui/material/TextField';
-import { app, storage, db, database } from '../firebase-config';
-
-import AppBar from '@mui/material/AppBar';
-import Box from '@mui/material/Box';
-import Toolbar from '@mui/material/Toolbar';
-import IconButton from '@mui/material/IconButton';
-import Typography from '@mui/material/Typography';
-import Menu from '@mui/material/Menu';
-import MenuIcon from '@mui/icons-material/Menu';
+import * as React from "react";
+import Box from "@mui/material/Box";
+import AppBar from "@mui/material/AppBar";
+import Toolbar from "@mui/material/Toolbar";
+import Typography from "@mui/material/Typography";
+import Divider from "@mui/material/Divider";
+import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
+import Button from "@mui/material/Button";
+import MuiDrawer from '@mui/material/Drawer';
 import Container from '@mui/material/Container';
-import Avatar from '@mui/material/Avatar';
-import Button from '@mui/material/Button';
-import Tooltip from '@mui/material/Tooltip';
-import MenuItem from '@mui/material/MenuItem';
-
-import Tab from '@mui/material/Tab';
-import TabContext from '@mui/lab/TabContext';
-import TabList from '@mui/lab/TabList';
-import TabPanel from '@mui/lab/TabPanel';
-import CssBaseline from '@mui/material/CssBaseline';
-
+import Paper from '@mui/material/Paper';
+import Avatar from "@mui/material/Avatar";
+import PersonIcon from "@mui/icons-material/Person";
+import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import AddCircleIcon from "@mui/icons-material/AddCircle";
+import SupervisorAccountIcon from "@mui/icons-material/SupervisorAccount";
+import PropTypes from "prop-types";
+import TableContainer from '@mui/material/TableContainer';
+import Tabs from "@mui/material/Tabs";
+import Tab from "@mui/material/Tab";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
+import List from '@mui/material/List';
+import { mainListItems, secondaryListItems } from './doctorListItems';
 import InputLabel from '@mui/material/InputLabel';
 import FormControl from '@mui/material/FormControl';
+import TextField from '@mui/material/TextField';
 import Grid from '@mui/material/Grid';
+import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
-
+import {
+    DataGrid,
+    gridPageCountSelector,
+    gridPageSelector,
+    useGridApiContext,
+    useGridSelector,
+  } from '@mui/x-data-grid';
 import DateAdapter from '@mui/lab/AdapterDateFns';
 import AdapterDateFns from '@mui/lab/AdapterDateFns';
 import LocalizationProvider from '@mui/lab/LocalizationProvider';
@@ -39,31 +45,191 @@ import DatePicker from '@mui/lab/DatePicker';
 import Card from '@mui/material/Card';
 import CardActions from '@mui/material/CardActions';
 import CardContent from '@mui/material/CardContent';
+import CssBaseline from '@mui/material/CssBaseline';
 
 import OutlinedInput from '@mui/material/OutlinedInput';
 import InputAdornment from '@mui/material/InputAdornment';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import IconButton from '@mui/material/IconButton';
 
+import { app, storage, database } from '../firebase-config';
 import { ref, child, get, push, update } from "firebase/database";
+import { getStorage, uploadBytes, ref as sref, getDownloadURL } from "firebase/storage";
 import { SettingsApplicationsTwoTone } from '@material-ui/icons';
 import { ToastContainer, toast } from 'react-toastify';
-import { styled } from '@mui/material/styles';
+import Pagination from '@mui/material/Pagination';
+import PaginationItem from '@mui/material/PaginationItem';
+import { Link } from "@material-ui/core";
+//import 'react-toastify/dist/ReactToastify.css';
+import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
+import theme from './theme';
+
+import ToggleButton from '@mui/material/ToggleButton';
+import { VideoStableOutlined } from "@mui/icons-material";
+
+function Copyright(props) {
+    return (
+      <Typography variant="body2" color="text.secondary" align="center" {...props}>
+        {'Copyright © '}
+        Tech-Medicine.
+        {new Date().getFullYear()}
+        {'.'}
+      </Typography>
+    );
+  }
+
+const StyledDataGrid = styled(DataGrid)(({ theme }) => ({
+    border: 0,
+    color:
+      theme.palette.mode === 'light' ? 'rgba(0,0,0,.85)' : 'rgba(255,255,255,0.85)',
+    fontFamily: [
+      '-apple-system',
+      'BlinkMacSystemFont',
+      '"Segoe UI"',
+      'Roboto',
+      '"Helvetica Neue"',
+      'Arial',
+      'sans-serif',
+      '"Apple Color Emoji"',
+      '"Segoe UI Emoji"',
+      '"Segoe UI Symbol"',
+    ].join(','),
+    WebkitFontSmoothing: 'auto',
+    letterSpacing: 'normal',
+    '& .MuiDataGrid-columnsContainer': {
+      backgroundColor: theme.palette.mode === 'light' ? '#fafafa' : '#1d1d1d',
+    },
+    '& .MuiDataGrid-iconSeparator': {
+      display: 'none',
+    },
+    '& .MuiDataGrid-columnHeader, .MuiDataGrid-cell': {
+      borderRight: `1px solid ${
+        theme.palette.mode === 'light' ? '#f0f0f0' : '#303030'
+      }`,
+    },
+    '& .MuiDataGrid-columnsContainer, .MuiDataGrid-cell': {
+      borderBottom: `1px solid ${
+        theme.palette.mode === 'light' ? '#f0f0f0' : '#303030'
+      }`,
+    },
+    '& .MuiDataGrid-cell': {
+      align: 'center',
+      color:
+        theme.palette.mode === 'light' ? 'rgba(0,0,0,.85)' : 'rgba(255,255,255,0.65)',
+    },
+    '& .MuiPaginationItem-root': {
+      borderRadius: 0,
+    },
+  }));
+  
+  function CustomPagination() {
+    const apiRef = useGridApiContext();
+    const page = useGridSelector(apiRef, gridPageSelector);
+    const pageCount = useGridSelector(apiRef, gridPageCountSelector);
+  
+    return (
+      <Pagination
+        color="primary"
+        variant="outlined"
+        shape="rounded"
+        page={page + 1}
+        count={pageCount}
+        // @ts-expect-error
+        renderItem={(props2) => <PaginationItem {...props2} disableRipple />}
+        onChange={(event, value) => apiRef.current.setPage(value - 1)}
+      />
+    );
+  }
 
 
-const src = 'https://static.vecteezy.com/system/resources/thumbnails/000/606/951/small/campuraai-12.jpg';
 
-export default function HomeDoctor() {
+const drawerWidth = 240;
+
+const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' })(
+    ({ theme, open }) => ({
+      '& .MuiDrawer-paper': {
+        position: 'relative',
+        whiteSpace: 'nowrap',
+        width: drawerWidth,
+        transition: theme.transitions.create('width', {
+          easing: theme.transitions.easing.sharp,
+          duration: theme.transitions.duration.enteringScreen,
+        }),
+        boxSizing: 'border-box',
+        ...(!open && {
+          overflowX: 'hidden',
+          transition: theme.transitions.create('width', {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.leavingScreen,
+          }),
+          width: theme.spacing(7),
+          [theme.breakpoints.up('sm')]: {
+            width: theme.spacing(9),
+          },
+        }),
+      },
+    }),
+  );
+
+
+function TabPanel(props) {
+    const { children, value, index, ...other } = props;
+
+    return (
+
+        <div
+            role="tabpanel"
+            hidden={value !== index}
+            id={`vertical-tabpanel-${index}`}
+            aria-labelledby={`vertical-tab-${index}`}
+            {...other}
+        >
+            {value === index && (
+                <Box sx={{ p: 3 }}>
+                    <Typography>{children}</Typography>
+                </Box>
+            )}
+        </div>
+    );
+}
+
+TabPanel.propTypes = {
+    children: PropTypes.node,
+    index: PropTypes.number.isRequired,
+    value: PropTypes.number.isRequired
+};
+
+function a11yProps(index) {
+    return {
+        id: `vertical-tab-${index}`,
+        "aria-controls": `vertical-tabpanel-${index}`
+    };
+}
+
+export default function AdminDoctors() {
+    const [value, setValue] = React.useState(3);
+
+    const handleChanges = (event, newValue) => {
+        setValue(newValue);
+    };
+    const [open, setOpen] = React.useState(true);
+    const toggleDrawer = () => {
+        setOpen(!open);
+      };
+    const [tabledata, setTableData] = React.useState([]);
+    const [hospdata, setHospData] = React.useState([]);
     const [selectedFile, setSelectedFile] = useState();
+    const [fileName, setFileName] = useState('');
     const [isFilePicked, setIsFilePicked] = useState(false);
-    const [value, setValue] = React.useState('3');
     const changeHandler = (event) => {
         setSelectedFile(event.target.files[0]);
         setIsFilePicked(true);
     };
-    const [anchorEl, setAnchorEl] = React.useState(null);
-
-
+    const handleLogout = () => {
+        sessionStorage.removeItem('Auth Token');
+        navigate('/login')
+    }
     const [values, setValues] = React.useState({
         password: '',
         showPassword: false,
@@ -180,17 +346,43 @@ export default function HomeDoctor() {
             
         }
     };
-    const handleLogout = () => {
-        sessionStorage.removeItem('Auth Token');
-        navigate('/login')
-    }
+    const columns = [
+        {
+            field: "name",
+            headerName: "Name",
+            width: 200,
+            sortable: false,
+            "headerAlign": 'center',
+        },
+        {
+            field: "email",
+            headerName: "Email",
+            width: 200,
+            "headerAlign": 'center'
+        },
+        {
+            field: "date",
+            headerName: "Date",
+            width: 400,
+            "headerAlign": 'center'
+        }
+    ];
 
-    const handleChanged = (event, newValue) => {
-        setValue(newValue);
-    };
+    const hospColumns = [
+        {
+            field: "name",
+            headerName: "Name",
+            width: 180,
+            sortable: false,
+            "headerAlign": 'center',
+        }
+    ];
     let navigate = useNavigate();
     useEffect(() => {
         let authToken = sessionStorage.getItem('Auth Token')
+        let uid = sessionStorage.getItem('UID')
+        console.log(uid)
+        console.log(authToken)
         if (authToken) {
             navigate('/homedoctor')
         }
@@ -198,168 +390,129 @@ export default function HomeDoctor() {
         if (!authToken) {
             navigate('/register')
         }
+        let dbRef = ref(database);
+        console.log(dbRef)
+        get(child(dbRef, `appointments`)).then((snapshot) => {
+            let snapshot_val = snapshot.val()[uid];
+            console.log(snapshot_val)
+            var temparray = []
+            for (const [key, value] of Object.entries(snapshot_val)) {
+              var temp = {"id": key
+                    , "name": value.patientName
+                , "email": value.patientEmail
+            ,"date": value.date}
+              console.log(temp)
+              temparray.push(temp)
+              
+              
+            }
+            setTableData(temparray);
+          }).catch((error) => {
+            console.log(error)
+          })
+
     }, [])
     return (
-        
-        <Box>
+        <ThemeProvider theme={theme}>
+        <Box sx={{ display: "flex" }}>
         <CssBaseline />
-            <AppBar position="static">
-                <Container maxWidth="xl">
-                    <Toolbar disableGutters>
-                        <Typography
-                            variant="h6"
-                            noWrap
-                            component="div"
-                            sx={{ mr: 2, display: { xs: "none", md: "flex" } }}
-                        >
-                            <Avatar src={src} sx={{ width: 45, height: 45 }} />
-                        </Typography>
-                        <Typography
-                            variant="h5"
-                            noWrap
-                            component="div"
-                            sx={{ flexGrow: 1, mr: 2, display: { xs: "none", md: "flex" } }}
-                        >
-                            Tele-opthalmology
-                        </Typography>
-                        <Typography
-                            variant="h6"
-                            noWrap
-                            component="div"
-                            sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}
-                        >
-                            <Avatar src={src} sx={{ width: 45, height: 45 }} />
-                        </Typography>
-                        <Typography
-                            variant="h5"
-                            noWrap
-                            component="div"
-                            sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}
-                        >
-                            Tele-opthalmology
-                        </Typography>
-                        <Button variant="outlined" color='inherit' sx={{ mx: 2 }} onClick={handleLogout}>Logout</Button>
-                        <Avatar
-                            src="/static/images/avatar/2.jpg"
-                            sx={{ bgcolor: "#f44336" }}
-                        />
-                    </Toolbar>
-                </Container>
+            <AppBar position="absolute" open={open} >
+                <Toolbar
+            sx={{
+              pr: '24px', // keep right padding when drawer closed
+            }}
+          >
+            <IconButton
+              edge="start"
+              color="inherit"
+              aria-label="open drawer"
+              onClick={toggleDrawer}
+              sx={{
+                marginRight: '36px',
+                ...(open && { display: 'none' }),
+              }}
+            >
+              
+            </IconButton>
+            
+            <Typography
+              component="h1"
+              variant="h6"
+              color="inherit"
+              noWrap
+              sx={{ flexGrow: 1 }}
+            >
+              Tele-Medicine
+            </Typography>
+            <RemoveRedEyeIcon
+                        sx={{ border: 3, width: 40, height: 30, borderRadius: 2 }}
+                    />
+                        -
+                    <RemoveRedEyeIcon
+                        sx={{ border: 3, width: 40, height: 30, borderRadius: 2 }}
+                    />
+          </Toolbar>
             </AppBar>
-            <Box sx={{ width: "100%", typography: "body1" }}>
-                <TabContext value={value}>
-                    <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-                        <TabList onChange={handleChanged} aria-label="lab API tabs example">
-                            <Tab label="Consultation" value="1" />
-                            <Tab label="Prescription" value="2" />
-                            <Tab label="Profile" value="3" />
-                        </TabList>
-                    </Box>
-                    <TabPanel value="1">Item One</TabPanel>
-                    <TabPanel value="2">Item Two</TabPanel>
-                    <TabPanel value="3">
-                    <Grid container spacing={2} >
-                        <Grid item xs={4}>
-                            <TextField required id="first_name" label="First Name" variant="outlined" autoWidth sx={{ m: '2', minWidth: '25ch' }} value={firstname} onChange={handleChangeFirstName} />
-                        </Grid>
-                        <Grid item xs={4}>
-                            <TextField id="middle_name" label="Middle Name" variant="outlined" autoWidth sx={{ m: '2', minWidth: '25ch' }} value={middlename} onChange={handleChangeMiddleName} />
-                        </Grid>
-                        <Grid item xs={4}>
-                            <TextField required id="last_name" label="Last Name" variant="outlined" autoWidth sx={{ m: '2', minWidth: '25ch' }} value={lastname} onChange={handleChangeLastName} />
-                        </Grid>
-                        <Grid item xs={4}>
-                            <FormControl required sx={{ m: 2, minWidth: 120 }}>
-                                <InputLabel id="demo-simple-select-autowidth-label">Gender</InputLabel>
-                                <Select
-                                    labelId="demo-simple-select-autowidth-label"
-                                    id="demo-simple-select-autowidth"
-                                    autoWidth
-                                    value={gender}
-                                    onChange={handleChangegender}
-                                    label="Gender"
-                                >
-                                    <MenuItem value={'Male'}>Male</MenuItem>
-                                    <MenuItem value={'Female'}>Female</MenuItem>
-                                    <MenuItem value={'Others'}>Other</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={4}>
-                            <FormControl required sx={{ m: 2, minWidth: 150 }}>
-                                <InputLabel id="demo-simple-select-autowidth-label">Blood Group</InputLabel>
-                                <Select
-                                    labelId="demo-simple-select-autowidth-label"
-                                    id="demo-simple-select-autowidth"
-                                    autoWidth
-                                    label="Blood Group"
-                                    value={bloodGroup}
-                                    onChange={handleChangeBloodGroup}
-                                >
-                                    <MenuItem value={'a-'}>A-</MenuItem>
-                                    <MenuItem value={'a+'}>A+</MenuItem>
-                                    <MenuItem value={'b-'}>B-</MenuItem>
-                                    <MenuItem value={'b+'}>B+</MenuItem>
-                                    <MenuItem value={'ab+'}>AB+</MenuItem>
-                                    <MenuItem value={'ab-'}>AB-</MenuItem>
-                                    <MenuItem value={'o+'}>O+</MenuItem>
-                                    <MenuItem value={'o-'}>O-</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={4}>
-                            <TextField required id="mob" label="Mobile Number" variant="outlined" sx={{ m: 2, minWidth: 150 }} value={mob} onChange={handleChangeMob} />
-                        </Grid>
-                        <Grid item xs={4}>
-                            <Box sx={{ m: 2 }}>
-                                <LocalizationProvider dateAdapter={AdapterDateFns} >
-                                    <DatePicker
-                                        renderInput={(props) => <TextField required {...props} />}
-                                        label="Date of Birth"
-                                        value={date}
-                                        onChange={(newValue) => {
-                                            setDate(newValue);
-                                        }}
-                                        maxDate={new Date()}
-                                    />
-                                </LocalizationProvider>
-                            </Box>
-                        </Grid>
-                        <Grid item xs={4}>
-                            <TextField required id="address1" label="Address Line 1" variant="outlined" sx={{ m: 2 }} value={address1} onChange={handleChangeAddress1} />
-                        </Grid>
-                        <Grid item xs={4}>
-                            <TextField id="address2" label="Address Line 2" variant="outlined" sx={{ m: 2 }} value={address2} onChange={handleChangeAddress2} />
-                        </Grid>
-                        <Grid item xs={4}>
-                            <TextField required id="city" label="City" variant="outlined" sx={{ m: 2 }} onChange={handleChangeCity} />
-                        </Grid>
-                        <Grid item xs={4}>
-                            <TextField required id="state" label="State" variant="outlined" sx={{ m: 2 }} value={state} onChange={handleChangeState} />
-                        </Grid>
-                        <Grid item xs={4}>
-                            <TextField required id="country" label="Country" variant="outlined" sx={{ m: 2 }} value={country} onChange={handleChangeCountry} />
-                        </Grid>
-                    </Grid>
-                    <Button
-                        type="submit"
-                        variant="contained"
-                        sx={{ mt: 3, mb: 2 }}
-                        onClick={handleSubmitData}
-                    >
-                        Update Profile Data
-                    </Button>
-                    <Grid>
-                        <label htmlFor="profile-pic">
-                            <Input accept="image/*" id="profile-pic" multiple type="file" onChange={changeProfilePic} />
-                            <Button variant="contained" component="span" onClick={handleProfilePic(selectedProfilePic)}>
-                                Upload Profile Picture
-                            </Button>
-                        </label>
-                    </Grid>
-                    </TabPanel>
-                </TabContext>
+            <Drawer variant="permanent" open={open}>
+                <Toolbar
+                sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                px: [1],
+                }}
+            >
+                <IconButton onClick={toggleDrawer}>
+              <ChevronLeftIcon />
+            </IconButton>
+          </Toolbar>
+          <Divider />
+          <List>{mainListItems}</List>
+          <Divider />
+          <List>{secondaryListItems}</List>
+        </Drawer>
+            
+        <Box
+          component="main"
+          sx={{
+            backgroundColor: (theme) =>
+              theme.palette.mode === 'light'
+                ? theme.palette.grey[100]
+                : theme.palette.grey[900],
+            backgroundImage: `url(https://images.pexels.com/photos/1103970/pexels-photo-1103970.jpeg)`,
+            flexGrow: 1,
+            height: '100vh',
+            overflow: 'auto',
+          }}
+        >
+                <Toolbar /> 
+                <Paper
+                  sx={{
+                    p: 2,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    height: "70%",
+                    margin: 4
+                  }}
+                >
+                  <Typography variant="h5" color="text.secondary">
+                Incoming Appointments
+                </Typography>
+                <div style={{ flexGrow: 1 }}>
+                <StyledDataGrid
+                  pageSize={5}
+                  rowsPerPageOptions={[5]}
+                  components={{
+                    Pagination: CustomPagination,
+                  }}
+                  rows={tabledata} columns={columns}
+                />
+                </div>
+                </Paper>
+                
+                <Copyright sx={{ pt: 4 }} />
             </Box>
-        </Box>
+        </Box >
+        </ThemeProvider>
     );
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
+import { styled, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
@@ -10,10 +10,8 @@ import Typography from '@mui/material/Typography';
 import MenuIcon from '@material-ui/icons/Menu';
 import InputLabel from '@mui/material/InputLabel';
 import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
-import { useTheme } from '@mui/material/styles';
 import MuiDrawer from '@mui/material/Drawer';
 import FormControl from '@mui/material/FormControl';
-import AccountCircleIcon from '@material-ui/icons/AccountCircle';
 import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
 import Divider from '@mui/material/Divider';
 import List from '@mui/material/List';
@@ -21,17 +19,7 @@ import { mainListItems, secondaryListItems } from './listItems';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
-import Link from '@mui/material/Link';
-import Card from '@mui/material/Card';
-import CardActions from '@mui/material/CardActions';
-import CardContent from '@mui/material/CardContent';
-import CardMedia from '@mui/material/CardMedia';
 import Button from '@mui/material/Button';
-import Avatar from '@mui/material/Avatar';
-import blood_test from '../images/blood-test.png'
-import eye from '../images/left_eye.png'
-import health_report from '../images/health-report.png';
-import { keyframes } from '@mui/system';
 import theme from './theme';
 import AdapterDateFns from '@mui/lab/AdapterDateFns';
 import LocalizationProvider from '@mui/lab/LocalizationProvider';
@@ -45,16 +33,12 @@ import {
   useGridApiContext,
   useGridSelector,
 } from '@mui/x-data-grid';
-import { useDemoData } from '@mui/x-data-grid-generator';
 import Pagination from '@mui/material/Pagination';
 import PaginationItem from '@mui/material/PaginationItem';
 import TextField from '@mui/material/TextField';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
-import Checkbox from '@mui/material/Checkbox';
-import { app, storage, database } from '../firebase-config';
-import { ref, child, get, push, update } from "firebase/database";
-import { getStorage, uploadBytes, ref as sref, getDownloadURL, getMetadata } from "firebase/storage";
+import { storage, database } from '../firebase-config';
+import { ref, child, get, update } from "firebase/database";
+import {  ref as sref, getDownloadURL } from "firebase/storage";
 const StyledDataGrid = styled(DataGrid)(({ theme }) => ({
   border: 0,
   color:
@@ -119,14 +103,6 @@ function CustomPagination() {
 }
 
 const drawerWidth = 240;
-const spin = keyframes`
-from {
-  transform: rotate(0deg);
-}
-to {
-  transform: rotate(360deg);
-}
-`;
 function Copyright(props) {
   return (
     <Typography variant="body2" color="text.secondary" align="center" {...props}>
@@ -162,7 +138,6 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
     },
   }),
 );
-const mdTheme = createTheme();
 export default function PatientAppointments() {
   var d = new Date();
   var min_time = new Date(0,0,0,d.getHours());
@@ -181,10 +156,11 @@ export default function PatientAppointments() {
   const [hospitalarray,setHospitalArray] = useState([]);
   const [date, setDate] = React.useState(d);
   const [open, setOpen] = React.useState(true);
+  const [patientName, setPatientName] = React.useState('');
+  const [patientEmail, setPatientEmail] = React.useState('');
   const [doctor, setDoctor] = React.useState('');
   const [hospital, setHospital] = React.useState('');
   const [tabledata, setTableData] = React.useState([]);
-  const [imgsrc, setImgSrc] = React.useState('https://i.imgur.com/Rbp9NSp.jpg');
   const columns = [
     {
       "field": "date",
@@ -241,6 +217,16 @@ export default function PatientAppointments() {
       updates['/appointments/' + uid + '/' + hospital+doctor] = postData;
       update(dbRef, updates);
       
+      const doctorData = {
+        date: date.toLocaleString('en-IN')
+        , patientName: patientName,
+        patientEmail: patientEmail
+      };
+      console.log(doctorData)
+      const docupdates = {};
+      docupdates['/appointments/' + doctor + '/' + hospital+uid] = doctorData;
+      update(dbRef, docupdates);
+
       var temp = {"id": hospital+doctor
                   , "date": date.toLocaleString('en-IN')
                   , "doctorName": doctorName
@@ -257,6 +243,12 @@ export default function PatientAppointments() {
         let authToken = sessionStorage.getItem('Auth Token');
         let uid = sessionStorage.getItem('UID');
         let dbRef = ref(database);
+        get(child(dbRef, `users`)).then((snapshot) => {
+          let snapshot_val = snapshot.val();
+          let uid = sessionStorage.getItem('UID')
+          setPatientName(snapshot_val[uid]['name']);
+          setPatientEmail(snapshot_val[uid]['email']);
+        })
         get(child(dbRef, `doctors`)).then((snapshot) => {
           let snapshot_val = snapshot.val();
           console.log(snapshot_val)
@@ -265,15 +257,11 @@ export default function PatientAppointments() {
             var temp = {uid: key
                           ,name: value.name}
             temparray.push(temp)
-            
-            console.log(doctorarray);
           }
-          console.log(temparray)
           setDoctorArray(temparray);
         })
         get(child(dbRef, `hospitals`)).then((snapshot) => {
           let snapshot_val = snapshot.val();
-          console.log(snapshot_val)
           var temparray = []
           for (const [key, value] of Object.entries(snapshot_val)) {
             var temp = {uid: key
@@ -281,19 +269,16 @@ export default function PatientAppointments() {
             temparray.push(temp)
             
           }
-          console.log(temparray)
           setHospitalArray(temparray);
         })
         get(child(dbRef, `appointments`)).then((snapshot) => {
           let snapshot_val = snapshot.val()[uid];
-          console.log(snapshot_val)
           var temparray = []
           for (const [key, value] of Object.entries(snapshot_val)) {
             var temp = {"id": key
                   , "date": value.date
                   , "doctorName": value.doctorName
                   , "hospital": value.hospital}
-            console.log(temp)
             temparray.push(temp)
             
             
@@ -302,15 +287,6 @@ export default function PatientAppointments() {
         }).catch((error) => {
           console.log(error)
         })
-        getDownloadURL(sref(storage, uid + '/profile_pic'))
-        .then((url) => {
-          setImgSrc(url);
-        })
-        .catch((error) => {
-          console.log(error);
-          console.log("Profile picture not available.")
-        });
-        console.log(authToken)
         if (authToken) {
             navigate('/appointments-patient')
         }
@@ -502,25 +478,6 @@ export default function PatientAppointments() {
             </Grid>
             <Copyright sx={{ pt: 4 }} />
             <Grid item>
-            {/* <Typography variant="caption">
-              {'Icons made by '}
-              <Link href="https://www.freepik.com" rel="sponsored" title="Freepik">
-                Freepik
-              </Link>
-              {' from '}
-              <Link href="https://www.flaticon.com" rel="sponsored" title="Flaticon">
-                www.flaticon.com
-              </Link>
-              {' is licensed by '}
-              <Link
-                href="https://creativecommons.org/licenses/by/3.0/"
-                title="Creative Commons BY 3.0"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                CC 3.0
-              </Link>
-            </Typography> */}
           </Grid>
           </Container>
           </Box>

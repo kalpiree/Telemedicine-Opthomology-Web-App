@@ -1,4 +1,7 @@
-import { useState,useEffect   } from 'react';
+/*
+Main file of the website
+*/
+import { useState,useEffect  } from 'react';
 import './App.css';
 import LoginForm from './Components/Common/LoginForm';
 import RegisterForm from './Components/Common/RegisterForm';
@@ -11,6 +14,7 @@ import PatientAppointments from './Components/PatientAppointments'
 import Doctors from './Components/Doctors';
 import EditPatientProfile from './Components/EditPatientProfile';
 import EditAdminProfile from './Components/EditAdminProfile';
+import EditDoctorProfile from './Components/EditDoctorProfile';
 import AdminDoctors from './Components/AdminDoctors';
 import EyeMl from './Components/EyeMl';
 import {
@@ -18,18 +22,26 @@ import {
   Route,
   useNavigate
 } from "react-router-dom";
-import { app, storage, database } from './firebase-config';
+import { database } from './firebase-config';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth'
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { ref, child, get, push, update } from "firebase/database";
+import { ref, child, get, update } from "firebase/database";
 
+
+//Core App to run
 function App() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] =  useState('');
-  const [name, setName] = useState('');
-  let navigate = useNavigate();
+  const [email, setEmail] = useState(''); //Store email
+  const [password, setPassword] = useState(''); //Store password
+  const [role, setRole] =  useState(''); //Store role
+  const [name, setName] = useState(''); //Store name
+  let navigate = useNavigate(); //navigate function
+  
+  
+  /**
+* Function that handles when a user tries to login/register
+* @param    {Integer} id    id==1 for sign in, id == 2 for register 
+*/
   const handleAction = (id) => {
     const authentication = getAuth();
     if (id === 1) {
@@ -42,12 +54,10 @@ function App() {
             let role_val = snapshot_val[uid_val]['role'];
             sessionStorage.setItem('Auth Token', response._tokenResponse.refreshToken)
             sessionStorage.setItem('UID', response.user.uid)
-            console.log(role_val)
             if(role_val=='Doctor'){
               navigate('/homedoctor')
             }
             else if(role_val=='Patient'){
-              console.log("Entered here")
               navigate('/homepatient')
             }
             else if(role_val=='Admin'){
@@ -56,10 +66,6 @@ function App() {
           }).catch((error) => {
           console.error(error);
           });
-          // console.log(response)
-          // sessionStorage.setItem('UID', response.user.uid)
-          
-          
         })
         .catch((error) => {
           console.log(error.code)
@@ -70,7 +76,6 @@ function App() {
             toast.error('Please check the Email',{autoClose: 2000});
           }
         })
-        
     }
     if (id === 2) {
       createUserWithEmailAndPassword(authentication, email, password)
@@ -80,11 +85,27 @@ function App() {
             role: role,
             email: email
           };
+          
           const dbRef = ref(database);
           const updates = {};
           updates['/users/' + response.user.uid] = postData;
 
           update(dbRef, updates);
+
+          if(role=='Doctor'){
+            const doctorData = {
+              name: name,
+              hospital: 'Fortes',
+              image:"https://firebasestorage.googleapis.com/v0/b/med-data-19269.appspot.com/o/EvV01iliyMaMQAMN6nBf8IH9ZLi2%2Fprofile_pic?alt=media",
+              email: email,
+              age: 35,
+              detail: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin vel nunc augue. Sed pretium erat eros, quis vestibulum sapien vehicula a. Nullam ornare, mauris in mattis vehicula, nisl mi ullamcorper ex, vel mattis purus mauris sit amet neque. In varius consequat rhoncus. Proin vel rhoncus mauris, sit amet blandit magna. Suspendisse dapibus lacinia augue, lobortis rhoncus odio sollicitudin at. Quisque gravida arcu eu lorem aliquam laoreet. Nam sit amet molestie mauris, et dignissim lorem. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas nec quam consectetur, condimentum massa in, congue dui. Suspendisse ac lectus elit. In vel purus tortor. Aenean vitae tellus velit. Aenean diam elit, luctus vel maximus at, tincidunt tincidunt est. Nullam hendrerit lectus magna, a tempus nulla egestas vel."
+            };
+            const doc_updates = {};
+            doc_updates['/doctors/' + response.user.uid] = doctorData;
+
+            update(dbRef, doc_updates);
+          }
           if(role=='Doctor'){
             navigate('/homedoctor')
           }
@@ -107,14 +128,6 @@ function App() {
 
   useEffect(() => {
     let authToken = sessionStorage.getItem('Auth Token')
-  //   let uid = sessionStorage.getItem('UID')
-  //   console.log(uid)
-  //   getAuth()
-  //     .getUser(uid)
-  //       .then((userRecord) => {
-  //   // The claims can be accessed on the user record.
-  //       console.log(userRecord);
-  // });
     if (authToken) {
       if(role=='Doctor'){
         navigate('/homedoctor')
@@ -218,6 +231,12 @@ function App() {
             path='/eye-ml'
             element={
               <EyeMl />}
+          />
+
+          <Route
+            path='/edit-doctor-profile'
+            element={
+              <EditDoctorProfile />}
           />
 
         </Routes>
