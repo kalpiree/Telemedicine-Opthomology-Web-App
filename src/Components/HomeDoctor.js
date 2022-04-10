@@ -365,7 +365,47 @@ export default function AdminDoctors() {
             headerName: "Date",
             width: 400,
             "headerAlign": 'center'
+        },
+        {
+          field: "healthreporturl",
+          headerName: "Health Report",
+          width: 200,
+          "headerAlign": 'center',
+          renderCell: (cellValues) => {
+            return (
+              cellValues.row.healthreporturl == 'Unavailable' ?
+               (<div>Patient Report Not Uploaded</div>):
+                (<Link href={`${cellValues.row.healthreporturl}`}>Report Link</Link>)
+            )
+          }
+      },
+      {
+        field: "bloodreporturl",
+        headerName: "Blood Report",
+        width: 200,
+        "headerAlign": 'center',
+        renderCell: (cellValues) => {
+          return (
+            cellValues.row.bloodreporturl == 'Unavailable' ?
+             (<div>Patient Report Not Uploaded</div>):
+              (<Link href={`${cellValues.row.bloodreporturl}`}>Report Link</Link>)
+          )
         }
+    },
+    {
+      field: "eyereporturl",
+      headerName: "Eye Report",
+      width: 200,
+      "headerAlign": 'center',
+      renderCell: (cellValues) => {
+        return (
+          cellValues.row.eyereporturl == 'Unavailable' ?
+           (<div>Patient Report Not Uploaded</div>):
+            (<Link href={`${cellValues.row.eyereporturl}`}>Report Link</Link>)
+        )
+      }
+  }
+
     ];
 
     const hospColumns = [
@@ -400,7 +440,10 @@ export default function AdminDoctors() {
               var temp = {"id": key
                     , "name": value.patientName
                 , "email": value.patientEmail
-            ,"date": value.date}
+            ,"date": value.date
+          , "healthreporturl": value.healthreport
+          , "bloodreporturl": value.bloodreport
+          , "eyereporturl": value.eyereport}
               console.log(temp)
               temparray.push(temp)
               

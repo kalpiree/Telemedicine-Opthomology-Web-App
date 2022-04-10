@@ -160,7 +160,10 @@ export default function PatientAppointments() {
   const [patientEmail, setPatientEmail] = React.useState('');
   const [doctor, setDoctor] = React.useState('');
   const [hospital, setHospital] = React.useState('');
-  const [tabledata, setTableData] = React.useState([]);
+  const [tabledata, setTableData] = React.useState([]); 
+  const [bloodreportLink, setBloodReportLink] = React.useState('Unavailable');
+  const [healthreportLink, setHealthReportLink] = React.useState('Unavailable');
+  const [eyereportLink, setEyeReportLink] = React.useState('Unavailable');
   const columns = [
     {
       "field": "date",
@@ -220,7 +223,10 @@ export default function PatientAppointments() {
       const doctorData = {
         date: date.toLocaleString('en-IN')
         , patientName: patientName,
-        patientEmail: patientEmail
+        patientEmail: patientEmail,
+        healthreport: healthreportLink,
+        eyereport: eyereportLink,
+        bloodreport: bloodreportLink
       };
       console.log(doctorData)
       const docupdates = {};
@@ -243,6 +249,22 @@ export default function PatientAppointments() {
         let authToken = sessionStorage.getItem('Auth Token');
         let uid = sessionStorage.getItem('UID');
         let dbRef = ref(database);
+
+        getDownloadURL(sref(storage, uid + '/blood_report'))
+        .then((url) => {
+          setBloodReportLink(url);
+        })
+
+        getDownloadURL(sref(storage, uid + '/health_report'))
+        .then((url) => {
+          setHealthReportLink(url);
+        })
+
+        getDownloadURL(sref(storage, uid + '/eye_report'))
+        .then((url) => {
+          setEyeReportLink(url);
+        })
+
         get(child(dbRef, `users`)).then((snapshot) => {
           let snapshot_val = snapshot.val();
           let uid = sessionStorage.getItem('UID')
